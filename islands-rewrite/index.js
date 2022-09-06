@@ -4,6 +4,8 @@ const require = createRequire(import.meta.url);
 // docs: https://aws.github.io/aws-iot-device-sdk-js-v2/node/index.html
 import { mqtt, iot } from 'aws-iot-device-sdk-v2'
 
+import { readFile } from 'fs'
+
 const config = require("./config.json");
 
 function build_connection() {
@@ -39,6 +41,24 @@ console.log("Subscribe completed.")
 console.log("Publishing...")
 console.log(await connection.publish("test", { test: "test" }, mqtt.QoS.AtLeastOnce))
 console.log("Publish completed.")
+console.log("Starting up python script...")
+exec('python3 ./weather-and-light.py', (error, stdout, stderr) => {
+  if (error) { console.error(`error: ${error.message}`) }
+  if (stderr) { console.error(`stderr: ${stderr}`) }
+})
+console.log("Python script started")
+setInterval(() => {
+  readFile('./handoff.json', (err, data) => {
+    const handoff = JSON.parse(data.toString())
+    console.log('Checking for new handoff...')
+    if (handoff.timestamp > lastTimestamp) {
+      console.log('New handoff found, emitting', handoff.message, 'via mqtt.')
+      connection.publish('test', { message: handoff.message }, mqtt.QoS.AtLeastOnce)
+    } else {
+      console.log('No new handoff found.')
+    }
+  })
+}, 333)
 
 // TODO: clean up on sigkill, etc
 // console.log("Disconnecting...")

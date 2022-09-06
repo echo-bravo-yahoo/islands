@@ -6,6 +6,7 @@ f"Sorry! This program requires Python >= 3.6 😅"
 import os
 import time
 import numpy
+import json
 import colorsys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from fonts.ttf import RobotoMedium as UserFont
@@ -306,8 +307,8 @@ WIDTH = disp.width
 HEIGHT = disp.height
 
 # The city and timezone that you want to display.
-city_name = "Sheffield"
-time_zone = "Europe/London"
+city_name = "Seattle"
+time_zone = "America/Los_Angeles"
 
 # Values that alter the look of the background
 blur = 50
@@ -349,10 +350,21 @@ trend = "-"
 # Keep track of time elapsed
 start_time = time.time()
 
+# Time since last handoff
+handoff_time = time.time()
+
 while True:
     path = os.path.dirname(os.path.realpath(__file__))
     progress, period, day, local_dt = sun_moon_time(city_name, time_zone)
     background = draw_background(progress, period, day)
+
+    # Handoff
+    curr_time = time.time()
+    if curr_time > handoff_time:
+        handoff_time = curr_time
+        json_object = json.dumps({ "timestamp": curr_time, "message": curr_time })
+        with open("./handoff.json", "w") as outfile:
+            outfile.write(json_object)
 
     # Time.
     time_elapsed = time.time() - start_time
