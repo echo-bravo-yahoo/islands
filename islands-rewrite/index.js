@@ -1,13 +1,15 @@
-import { createRequire } from "module";
+import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 // docs: https://aws.github.io/aws-iot-device-sdk-js-v2/node/index.html
 import { mqtt, iot } from 'aws-iot-device-sdk-v2'
 
-import { readFile } from 'fs'
+import { readFile, unlinkSync } from 'fs'
 import { exec } from 'child_process'
 
-const config = require("./config.json");
+const config = require('./config.json')
+// flag to determine if we should run cleanup code
+let dirty = true
 
 function build_connection() {
     let config_builder =
@@ -23,31 +25,43 @@ function build_connection() {
 }
 
 async function onPublish(topic, payload, dup, qos, retain) {
-    var decoder = new TextDecoder("utf-8");
+    var decoder = new TextDecoder('utf-8');
     const json = JSON.parse(decoder.decode(payload))
-    console.log(`Publish received. topic:"${topic}" dup:${dup} qos:${qos} retain:${retain}`);
+    console.log(`Publish received. topic:'${topic}' dup:${dup} qos:${qos} retain:${retain}`);
     console.log(JSON.stringify(json, null, 2))
 }
 
 // this non-resolved promise keeps the process running
 const shouldRun = new Promise(() => {})
 
-console.log("Connecting...")
+console.log('Connecting...')
 const connection = build_connection()
-console.log(await connection.connect())
-console.log("Connection completed.")
-console.log("Starting up python script...")
+await connection.connect()
+console.log('Connection completed.')
+console.log('Deleting old handoff file...')
+try {
+    unlinkSync('./handoff.json')
+    console.log('Deleted old handoff file.')
+} catch (e) {
+    if (e.code === 'ENOENT') {
+        console.log('No old handoff file to delete.')
+    } else {
+        throw e
+    }
+}
+console.log('Starting up python script...')
 let pythonChild = exec('python3 ./weather-and-light.py', (error, stdout, stderr) => {
   if (error) { console.error(`error: ${error.message}`) }
   if (stderr) { console.error(`stderr: ${stderr}`) }
 })
-console.log("Python script started")
+console.log('Python script started.')
 
 // the last time we read the handoff file
 let lastTimestamp = 0
 
 setInterval(() => {
   readFile('./handoff.json', (err, data) => {
+    if (!data) return
     const handoff = JSON.parse(data.toString())
     if (handoff.timestamp > lastTimestamp) {
       lastTimestamp = handoff.timestamp
@@ -58,28 +72,31 @@ setInterval(() => {
 }, 333)
 
 async function cleanUp() {
-  console.log('Killing python child process...')
-  pythonChild.kill()
-  console.log('Killed python child process.')
-  console.log('Disconnecting from AWS IoT...')
-  console.log(await connection.disconnect())
-  console.log('Disconnected from AWS IoT.')
+  if (dirty) {
+    dirty = false
+    console.log('Killing python child process...')
+    pythonChild.kill()
+    console.log('Killed python child process.')
+    console.log('Disconnecting from AWS IoT...')
+    await connection.disconnect()
+    console.log('Disconnected from AWS IoT.')
+  }
 }
 
 process.on('exit', async () => { await cleanUp() })
 
-process.on("SIGTERM", (signal) => {
+process.on('SIGTERM', (signal) => {
   console.log(`Process ${process.pid} received a SIGTERM signal.`)
   process.exit(0)
 })
 
-process.on("SIGINT", async (signal) => {
+process.on('SIGINT', async (signal) => {
   console.log(`Process ${process.pid} has been interrupted.`)
   await cleanUp()
   process.exit(0)
 })
 
-process.on("uncaughtException", async (err) => {
+process.on('uncaughtException', async (err) => {
   console.log(`Uncaught Exception: ${err.message}`)
   await cleanUp()
   process.exit(1)
