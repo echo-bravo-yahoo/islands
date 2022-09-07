@@ -358,14 +358,6 @@ while True:
     progress, period, day, local_dt = sun_moon_time(city_name, time_zone)
     background = draw_background(progress, period, day)
 
-    # Handoff
-    curr_time = time.time()
-    if curr_time > handoff_time:
-        handoff_time = curr_time
-        json_object = json.dumps({ "timestamp": curr_time, "message": curr_time })
-        with open("./handoff.json", "w") as outfile:
-            outfile.write(json_object)
-
     # Time.
     time_elapsed = time.time() - start_time
     date_string = local_dt.strftime("%d %b %y").lstrip('0')
@@ -381,6 +373,8 @@ while True:
     cpu_temps = cpu_temps[1:] + [cpu_temp]
     avg_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
     corr_temperature = temperature - ((avg_cpu_temp - temperature) / factor)
+    # convert to fahrenheit
+    corr_temperature = (corr_temperature * 9/5) + 32
 
     if time_elapsed > 30:
         if min_temp is not None and max_temp is not None:
@@ -392,7 +386,7 @@ while True:
             min_temp = corr_temperature
             max_temp = corr_temperature
 
-    temp_string = f"{corr_temperature:.0f}°C"
+    temp_string = f"{corr_temperature:.0f}°F"
     img = overlay_text(img, (68, 18), temp_string, font_lg, align_right=True)
     spacing = font_lg.getsize(temp_string)[1] + 1
     if min_temp is not None and max_temp is not None:
@@ -436,5 +430,21 @@ while True:
     pressure_icon = Image.open(f"{path}/icons/weather-{pressure_desc.lower()}.png")
     img.paste(pressure_icon, (80, 48), mask=pressure_icon)
 
+    # Handoff
+    curr_time = time.time()
+    if curr_time > (handoff_time + 60):
+        print("HELL YEAH")
+        handoff_time = curr_time
+        json_object = json.dumps({
+            "timestamp": curr_time,
+            "pressure": pressure,
+            "temp": corr_temperature,
+            "humidity": humidity,
+            "light": light
+        })
+        with open("./handoff.json", "w") as outfile:
+            outfile.write(json_object)
+
     # Display image
-    disp.display(img)
+    # Cat broke the display, so don't bother...
+    # disp.display(img)

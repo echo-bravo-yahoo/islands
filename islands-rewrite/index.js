@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url);
 import { mqtt, iot } from 'aws-iot-device-sdk-v2'
 
 import { readFile } from 'fs'
+import { exec } from 'child_process'
 
 const config = require("./config.json");
 
@@ -35,32 +36,51 @@ console.log("Connecting...")
 const connection = build_connection()
 console.log(await connection.connect())
 console.log("Connection completed.")
-console.log("Subscribing...")
-console.log(await connection.subscribe("test", mqtt.QoS.AtLeastOnce, onPublish))
-console.log("Subscribe completed.")
-console.log("Publishing...")
-console.log(await connection.publish("test", { test: "test" }, mqtt.QoS.AtLeastOnce))
-console.log("Publish completed.")
 console.log("Starting up python script...")
-exec('python3 ./weather-and-light.py', (error, stdout, stderr) => {
+let pythonChild = exec('python3 ./weather-and-light.py', (error, stdout, stderr) => {
   if (error) { console.error(`error: ${error.message}`) }
   if (stderr) { console.error(`stderr: ${stderr}`) }
 })
 console.log("Python script started")
+
+// the last time we read the handoff file
+let lastTimestamp = 0
+
 setInterval(() => {
   readFile('./handoff.json', (err, data) => {
     const handoff = JSON.parse(data.toString())
-    console.log('Checking for new handoff...')
     if (handoff.timestamp > lastTimestamp) {
-      console.log('New handoff found, emitting', handoff.message, 'via mqtt.')
-      connection.publish('test', { message: handoff.message }, mqtt.QoS.AtLeastOnce)
-    } else {
-      console.log('No new handoff found.')
+      lastTimestamp = handoff.timestamp
+      console.log('New handoff found, emitting', handoff, 'via mqtt.')
+      connection.publish('data/weather/greenhouse1', handoff, mqtt.QoS.AtLeastOnce)
     }
   })
 }, 333)
 
-// TODO: clean up on sigkill, etc
-// console.log("Disconnecting...")
-// console.log(await connection.disconnect())
-// console.log("Disconnecting completed.")
+async function cleanUp() {
+  console.log('Killing python child process...')
+  pythonChild.kill()
+  console.log('Killed python child process.')
+  console.log('Disconnecting from AWS IoT...')
+  console.log(await connection.disconnect())
+  console.log('Disconnected from AWS IoT.')
+}
+
+process.on('exit', async () => { await cleanUp() })
+
+process.on("SIGTERM", (signal) => {
+  console.log(`Process ${process.pid} received a SIGTERM signal.`)
+  process.exit(0)
+})
+
+process.on("SIGINT", async (signal) => {
+  console.log(`Process ${process.pid} has been interrupted.`)
+  await cleanUp()
+  process.exit(0)
+})
+
+process.on("uncaughtException", async (err) => {
+  console.log(`Uncaught Exception: ${err.message}`)
+  await cleanUp()
+  process.exit(1)
+})
