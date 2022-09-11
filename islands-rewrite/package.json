@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-iot-device-sdk-v2": "1.8.0",
-    "pm2": "^5.2.0"
+    "pm2": "^5.2.0",
+    "thermalprinter": "^0.3.10"
   }
 }
