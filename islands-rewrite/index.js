@@ -62,7 +62,13 @@ let lastTimestamp = 0
 setInterval(() => {
   readFile('./handoff.json', (err, data) => {
     if (!data) return
-    const handoff = JSON.parse(data.toString())
+    let handoff
+    try {
+      handoff = JSON.parse(data.toString())
+    } catch (error) {
+      console.error(`Error parsing handoff file: ${error}\n${data.toString()}`)
+      return
+    }
     if (handoff.timestamp > lastTimestamp) {
       lastTimestamp = handoff.timestamp
       console.log('New handoff found, emitting', handoff, 'via mqtt.')
