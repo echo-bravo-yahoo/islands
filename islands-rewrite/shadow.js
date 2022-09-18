@@ -9,6 +9,7 @@ async function subToShadowUpdate() {
       function updateAccepted(error, response) {
         if (response) {
           globals.logger.info({ role: 'breadcrumb' }, 'Updating modules in response to IoT shadow update.')
+          globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow update response:')
           for (const module in globals.modules) {
             globals.modules[module].handleState({
               desired: response.state.desired,
@@ -66,6 +67,7 @@ async function subToShadowGet() {
   return new Promise(async (resolve, reject) => {
     try {
       function getAccepted(err, response) {
+          globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow get response:')
         for (const module in globals.modules) {
           globals.modules[module].handleState({
             desired: response.state.desired,
@@ -122,6 +124,7 @@ async function subToShadowDelta() {
         globals.logger.info({ role: 'breadcrumb' }, 'Received shadow delta event.')
 
         globals.logger.info({ role: 'breadcrumb' }, 'Updating modules in response to shadow delta...')
+          globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow delta response:')
         for (const module in globals.modules) {
           globals.modules[module].handleDeltaState(response.state)
         }

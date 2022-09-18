@@ -433,7 +433,7 @@ while True:
     # Handoff
     curr_time = time.time()
     if curr_time > (handoff_time + 60):
-        print("HELL YEAH")
+        print("Recording new sample")
         handoff_time = curr_time
         json_object = json.dumps({
             "timestamp": curr_time,

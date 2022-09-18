@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-iot-device-sdk-v2": "1.8.0",
+    "bme680-sensor": "^1.1.0",
     "lodash": "^4.17.21",
     "pino": "^8.5.0",
     "pino-pretty": "^9.1.0",

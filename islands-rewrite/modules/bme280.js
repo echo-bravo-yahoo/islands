@@ -10,6 +10,7 @@ let pythonChild
 // the last time we read the handoff file
 let lastTimestamp = 0
 let interval
+let location = 'greenhouse1'
 
 async function register() {
 }
@@ -63,7 +64,7 @@ async function enable() {
       if (handoff.timestamp > lastTimestamp) {
         lastTimestamp = handoff.timestamp
         globals.logger.info({ role: 'breadcrumb' }, 'New handoff found, emitting', handoff, 'via mqtt.')
-        globals.connection.publish('data/weather/greenhouse1', handoff, mqtt.QoS.AtLeastOnce)
+        globals.connection.publish(`data/weather/${location}`, handoff, mqtt.QoS.AtLeastOnce)
       }
     })
   }, 333)
