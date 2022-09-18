@@ -442,7 +442,8 @@ while True:
             "humidity": humidity,
             "light": light
         })
-        with open("./handoff.json", "w") as outfile:
+        import sys
+        with open(sys.path[0] + "/../ipc/handoff.json", "w") as outfile:
             outfile.write(json_object)
 
     # Display image
