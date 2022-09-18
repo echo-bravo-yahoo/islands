@@ -1,7 +1,7 @@
 import { setupShadow } from './shadow.js'
 import { buildConnection } from './mqtt.js'
 import { setupProcess } from './process.js'
-import bme280 from './modules/bme-280.js'
+import bme280 from './modules/bme280.js'
 import loggerFactory from 'pino'
 
 export const globals = {
