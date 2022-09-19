@@ -75,6 +75,8 @@ async function subToShadowGet() {
             reported: response.state.reported
           })
         }
+        globals.island.location = response.state.desired.island.location
+        // if(globals.island.location) {
 
         if (err || !response) {
           globals.logger.error({ err: 'breadcrumb' }, '')
@@ -174,20 +176,27 @@ async function getCurrentShadow() {
   })
 }
 
-export function updateShadow(newValue) {
+export function updateReportedShadow(newValue) {
+  return updateWholeShadow({ reported: newValue })
+}
+
+export function updateDesiredShadow(newValue) {
+  return updateWholeShadow({ desired: newValue })
+}
+
+export function updateWholeShadow(newState) {
   return new Promise(async (resolve, reject) => {
     try {
-          var updateShadow = {
-            state: {
-              reported: newValue,
-            },
-            thingName: globals.name
-          }
+      var updateShadow = {
+        state: newState,
+        thingName: globals.name
+      }
 
       globals.logger.info({ role: 'breadcrumb' }, 'Publishing new shadow value.')
-          await globals.shadow.publishUpdateShadow(
-            updateShadow,
-            mqtt.QoS.AtLeastOnce)
+      globals.logger.debug({ role: 'blob', blob: updateShadow }, 'New shadow value:')
+      await globals.shadow.publishUpdateShadow(
+        updateShadow,
+        mqtt.QoS.AtLeastOnce)
       globals.logger.info({ role: 'breadcrumb' }, 'Published new shadow value.')
     } catch (err) {
       globals.logger.error({ err }, 'Failed to publish new shadow value.')

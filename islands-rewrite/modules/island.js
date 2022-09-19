@@ -1,11 +1,15 @@
 import { Config } from './generic-config.js'
-import { updateShadow } from '../shadow.js'
+import { updateDesiredShadow } from '../shadow.js'
 import { globals } from '../index.js'
 
 export class Island extends Config {
   constructor(stateKey) {
-    super()
-    this.stateKey = stateKey
+    super(stateKey)
+  }
+
+  triggerStateChange() {
+    // this will always try to update the shadow
+    updateDesiredShadow({ [this.stateKey]: globals[this.stateKey] })
   }
 
   handleStateChange(newState, reported) {
@@ -15,5 +19,5 @@ export class Island extends Config {
       updateShadow(set({}, path, newState))
   }
 }
-const island = new Config('island')
+const island = new Island('island')
 export default island

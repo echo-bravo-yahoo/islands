@@ -1,3 +1,5 @@
+import { spawn } from 'child_process'
+
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const config = require('./config.json')
@@ -17,7 +19,10 @@ export const globals = {
   config: [ island ],
   name: config.name,
   logger: loggerFactory({ level: 'debug' }),
-  island: {}
+  island: {
+    version: undefined,
+    location: undefined
+  }
 }
 
 globals.logger.info({ role: 'breadcrumb' }, 'Connecting...')
@@ -26,6 +31,14 @@ await globals.connection.connect()
 globals.logger.info({ role: 'breadcrumb' }, 'Connection completed.')
 
 await setupShadow()
+
+globals.logger.info({role: 'breadcrumb' }, 'Identifying application version...')
+const commitNumber = spawn('git', ['rev-list', '--count', 'HEAD'])
+commitNumber.stdout.on('data', (data) => {
+  globals.island.version = Number(data)
+  island.triggerStateChange()
+  globals.logger.info({role: 'breadcrumb' }, `Identified application version: ${data}`)
+})
 
 globals.logger.info({ role: 'breadcrumb' }, 'Registering modules...')
 const promises = []

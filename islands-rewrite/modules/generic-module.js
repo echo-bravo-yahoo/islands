@@ -2,7 +2,7 @@ import set from 'lodash/set.js'
 import isEqual from 'lodash/isEqual.js'
 
 import { Stateful } from './generic-stateful.js'
-import { updateShadow } from '../shadow.js'
+import { updateReportedShadow } from '../shadow.js'
 
 export class Module extends Stateful {
   constructor(stateKey, enable, disable, register) {
@@ -14,7 +14,7 @@ export class Module extends Stateful {
   }
 
   async handleDeltaState(delta) {
-    handleState({ delta })
+    this.handleState({ delta })
   }
 
   async handleStateChange(newState, reported) {
@@ -26,7 +26,7 @@ export class Module extends Stateful {
     }
 
     if (!isEqual(newState, reported))
-      updateShadow(set({}, `modules[${this.stateKey}]`, newState))
+      updateReportedShadow(set({}, `modules[${this.stateKey}]`, newState))
   }
 
   // takes in the entire state tree and decomposes it to the ones relevant to this module
