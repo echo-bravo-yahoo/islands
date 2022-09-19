@@ -8,7 +8,6 @@ import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
 let interval
-let location = 'den'
 
 async function enable() {
   globals.logger.info({ role: 'breadcrumb' }, `Enabling bme680...`)
@@ -25,7 +24,7 @@ async function enable() {
     }
     globals.logger.info({ role: 'breadcrumb' }, 'Publishing new bme680 data.')
     globals.logger.info({ role: 'blob', blob: payload }, 'bme680 data:')
-    globals.connection.publish(`data/weather/${location}`, payload, mqtt.QoS.AtLeastOnce)
+    globals.connection.publish(`data/weather/${globals.island.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
   }, 60*1000)
   globals.logger.info({ role: 'breadcrumb' }, `Enabled bme680.`)
 }
