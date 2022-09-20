@@ -6,11 +6,10 @@ import { updateReportedShadow } from '../shadow.js'
 
 export class Module extends Stateful {
   constructor(stateKey, enable, disable, register) {
-    super()
+    super(stateKey)
     this.register = register
     this.enable = enable
     this.disable = disable
-    this.stateKey = stateKey
   }
 
   async handleDeltaState(delta) {

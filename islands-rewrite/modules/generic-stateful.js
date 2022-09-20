@@ -5,10 +5,13 @@ import merge from 'lodash/merge.js'
 import { globals } from '../index.js'
 
 export class Stateful {
-  constructor() {
+  constructor(stateKey) {
     // set the initial state
     this.enabled = undefined
     this.currentState = {}
+    this.stateKey = stateKey
+    this.log = (...args) => globals.logger.info({ ...args[0], role: 'breadcrumb', component: this.stateKey }, args[1], args[2])
+    this.logBlob = (...args) => globals.logger.debug({ ...args[0], role: 'blob', component: this.stateKey }, args[1], args[2])
   }
 
   handleDeltaState(delta) {

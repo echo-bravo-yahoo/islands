@@ -2,8 +2,7 @@ import { Stateful } from './generic-stateful.js'
 
 export class Config extends Stateful {
   constructor(stateKey) {
-    super()
-    this.stateKey = stateKey
+    super(stateKey)
   }
 
   handleDeltaState(delta) {
