@@ -76,7 +76,7 @@ async function enable() {
       printer.on('ready', function() {
         log({}, `Enabled thermal printer serial connection.`)
         log({}, `Enabling thermal printer mqtt subscription...`)
-        globals.connection.subscribe(`commands/printer`, mqtt.QoS.AtLeastOnce, handlePrintRequest)
+        globals.connection.subscribe(`commands/printer/${this.location}`, mqtt.QoS.AtLeastOnce, handlePrintRequest)
         log({}, `Enabled thermal printer mqtt subscription.`)
         resolve()
       }).on('error', function(error) {
