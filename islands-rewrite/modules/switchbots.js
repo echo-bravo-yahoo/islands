@@ -3,20 +3,8 @@ import { mqtt } from 'aws-iot-device-sdk-v2'
 import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
-import { Switchbot } from 'node-switchbot'
+import Switchbot from 'node-switchbot'
 const switchbot = new Switchbot();
-
-if (bot_list.length === 0) {
-  throw new Error("No device was found.");
-}
-// The `SwitchbotDeviceWoHand` object representing the found Bot.
-let device = bot_list[0];
-// Put the Bot's arm down (stretch the arm)
-await device.down();
-// Wait for 5 seconds
-await switchbot.wait(5000);
-// Put the Bot's arm up (retract the arm)
-await device.up();
 
 /*
 {
@@ -30,9 +18,8 @@ await device.up();
 
 async function enable(state) {
   globals.logger.info({ role: 'breadcrumb' }, `Enabling switchbots...`)
-  const bots = await switchbot.discover({ model: "H", duration: 5000 })
+  const botsFound = await switchbot.discover({ model: "H", duration: 5000 })
   const botsToFind = state.switchbots
-  const botsFound = []
   for(let i = 0; i < botsToFind; i++) {
     const botToFind = botsToFind[i]
     const botFound = bots.filter((bot) => bot.id === botToFind.id)
