@@ -19,9 +19,9 @@ export class Module extends Stateful {
   async handleStateChange(newState, reported) {
     this.currentState = newState
     if (newState.enabled) {
-      await this.enable()
+      await this.enable(newState)
     } else {
-      await this.disable()
+      await this.disable(newState)
     }
 
     if (!isEqual(newState, reported))

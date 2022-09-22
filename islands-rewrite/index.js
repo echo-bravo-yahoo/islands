@@ -9,6 +9,7 @@ import { buildConnection } from './mqtt.js'
 import { setupProcess } from './process.js'
 import bme280 from './modules/bme280.js'
 import bme680 from './modules/bme680.js'
+import switchbots from './modules/switchbots.js'
 import thermalPrinter from './modules/thermal-printer.js'
 import island from './modules/island.js'
 import loggerFactory from 'pino'
@@ -16,7 +17,7 @@ import loggerFactory from 'pino'
 export const globals = {
   shadow: undefined,
   connection: undefined,
-  modules: [ bme280, bme680, thermalPrinter ],
+  modules: [ bme280, bme680, thermalPrinter, switchbots ],
   config: [ island ],
   name: config.name,
   logger: loggerFactory({ level: 'debug' }),
