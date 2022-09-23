@@ -37,9 +37,10 @@ await setupShadow()
 globals.logger.info({role: 'breadcrumb' }, 'Identifying application version...')
 const commitNumber = spawn('git', ['rev-list', '--count', 'HEAD'])
 commitNumber.stdout.on('data', (data) => {
-  globals.island.version = Number(data)
+  const version = Number(data)
+  globals.island.version = version
   island.triggerStateChange()
-  globals.logger.info({role: 'breadcrumb' }, `Identified application version: ${data}`)
+  globals.logger.info({role: 'breadcrumb' }, `Identified application version: ${version}`)
 })
 
 globals.logger.info({ role: 'breadcrumb' }, 'Registering modules...')
