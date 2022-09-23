@@ -1,4 +1,6 @@
 import { mqtt, iotshadow } from 'aws-iot-device-sdk-v2'
+import get from 'lodash/get.js'
+
 import { globals } from './index.js'
 
 let shadowUpdateComplete = false
@@ -75,8 +77,10 @@ async function subToShadowGet() {
             reported: response.state.reported
           })
         }
-        globals.island.location = response.state.desired.island.location
-        // if(globals.island.location) {
+        globals.island.location = get(response, 'state.desired.island.location', 'unknown')
+        if (globals.island.location === 'unknown') {
+          globals.logger.error({ err }, 'Island does not have a location.')
+        }
 
         if (err || !response) {
           globals.logger.error({ err: 'breadcrumb' }, '')
