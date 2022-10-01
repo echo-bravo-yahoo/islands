@@ -6,7 +6,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const imagePath = __dirname + '/modules/thermal-printer-images/nodebot.png'
+const imagePath = path.normalize(__dirname + '/../modules/thermal-printer-images/nodebot.png')
 
 serialPort.on('open',function() {
   var printer = new Printer(serialPort, {
