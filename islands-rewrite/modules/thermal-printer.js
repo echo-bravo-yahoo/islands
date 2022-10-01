@@ -74,17 +74,21 @@ async function enable() {
     serialPort.on('open',function() {
       printer = new Printer(serialPort)
       printer.on('ready', function() {
+        const topic = `commands/printer/${globals.island.location}`
         log({}, `Enabled thermal printer serial connection.`)
-        log({}, `Enabling thermal printer mqtt subscription...`)
-        globals.connection.subscribe(`commands/printer/${this.location}`, mqtt.QoS.AtLeastOnce, handlePrintRequest)
-        log({}, `Enabled thermal printer mqtt subscription.`)
+        log({}, `Enabling thermal printer mqtt subscription to topic ${topic}...`)
+        globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, handlePrintRequest)
+        log({}, `Enabled thermal printer mqtt subscription to topic ${topic}.`)
         resolve()
       }).on('error', function(error) {
+        reject(error)
         globals.logger.error(error)
       })
     }).on('error', function(error) {
+      reject(error)
       globals.logger.error(error)
     }).on('close', function(close) {
+      reject(error)
       globals.logger.error(close)
     })
   })
@@ -94,8 +98,6 @@ async function disable() {
   globals.logger.info({ role: 'breadcrumb' }, `Disabling thermal printer...`)
   this.enabled = false
   this.printer = undefined
-
-
   globals.logger.info({ role: 'breadcrumb' }, `Disabled thermal printer.`)
 }
 
