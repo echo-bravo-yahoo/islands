@@ -73,11 +73,11 @@ async function enable() {
     const serialPort = new SerialPort({ path: '/dev/ttyS0', baudRate: 19200 })
     serialPort.on('open',function() {
       printer = new Printer(serialPort)
-      printer.on('ready', function() {
+      printer.on('ready', async function() {
         const topic = `commands/printer/${globals.island.location}`
         log({}, `Enabled thermal printer serial connection.`)
         log({}, `Enabling thermal printer mqtt subscription to topic ${topic}...`)
-        globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, handlePrintRequest)
+        await globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, handlePrintRequest)
         log({}, `Enabled thermal printer mqtt subscription to topic ${topic}.`)
         resolve()
       }).on('error', function(error) {
