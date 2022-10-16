@@ -12,10 +12,6 @@ export class Module extends Stateful {
     this.disable = disable
   }
 
-  async handleDeltaState(delta) {
-    this.handleState({ delta })
-  }
-
   async handleStateChange(newState, reported) {
     this.currentState = newState
     if (newState.enabled) {

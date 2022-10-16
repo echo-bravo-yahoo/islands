@@ -14,8 +14,8 @@ export class Stateful {
     this.logBlob = (...args) => globals.logger.debug({ ...args[0], role: 'blob', component: this.stateKey }, args[1], args[2])
   }
 
-  handleDeltaState(delta) {
-    handleState({ delta })
+  async handleDeltaState(delta) {
+    this.handleState({ delta })
   }
 
   async genericHandleState({ desired: _desired, delta: _delta, reported: _reported, path, type, shortPath }) {
