@@ -8,7 +8,7 @@ sync {
    source="/home/swift/workspace/islands/islands-rewrite",
    host="pi@192.168.1.127",
    exclude = {
-     "node_modules/**,",
+     "node_modules/**",
      "ipc/**",
      "config.json",
      "package-lock.json",
