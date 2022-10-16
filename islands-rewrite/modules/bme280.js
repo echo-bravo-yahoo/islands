@@ -62,7 +62,7 @@ async function enable() {
       }
       if (handoff.timestamp > lastTimestamp) {
         lastTimestamp = handoff.timestamp
-        globals.logger.info({ role: 'breadcrumb' }, 'New handoff found, emitting', handoff, 'via mqtt.')
+        globals.logger.info({ role: 'breadcrumb' }, `New handoff found, publishing new bme280 data to data/weather/${globals.island.location || 'unknown'}: ${JSON.stringify(handoff)}`)
         globals.connection.publish(`data/weather/${globals.island.location || 'unknown'}`, handoff, mqtt.QoS.AtLeastOnce)
       }
     })

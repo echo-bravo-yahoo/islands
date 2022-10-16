@@ -23,7 +23,7 @@ async function enable() {
       // altitude:
     }
     globals.logger.info({ role: 'breadcrumb' }, 'Publishing new bme680 data.')
-    globals.logger.info({ role: 'blob', blob: payload }, 'bme680 data:')
+    globals.logger.info({ role: 'blob', blob: payload }, `bme680 data, published to data/weather/${globals.island.location || 'unknown'}: ${JSON.stringify(payload)}`)
     globals.connection.publish(`data/weather/${globals.island.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
   }, 60*1000)
   globals.logger.info({ role: 'breadcrumb' }, `Enabled bme680.`)
