@@ -2,22 +2,122 @@ import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
 import Switchbot from 'node-switchbot'
-const switchbot = new Switchbot();
+import { updateReportedShadow } from '../shadow.js'
+const switchbot = new Switchbot()
+let moduleState = undefined
+
+function invert(stateString) {
+  if (stateString === 'on') {
+    return 'off'
+  } else if (stateString === 'off') {
+    return 'on'
+  }
+}
+
+function botToOnOff(bot) {
+  return bot.state.on ? 'on' : 'off'
+}
+
+function botToUpDown(bot, desiredState=bot.state.on) {
+  if ((desiredState && !bot.state.reverseOnOff) || (!desiredState && bot.state.reverseOnOff)) {
+    return 'down'
+  } else if ((!desiredState && !bot.state.reverseOnOff) || (desiredState && bot.state.reverseOnOff)) {
+    return 'up'
+  }
+}
+
+function botToStateString(bot, invert=false) {
+  if (invert) {
+    return `${invert(botToOnOff(bot))} (${invert(botToUpDown(bot))})`
+  } else {
+    return `${botToOnOff(bot)} (${botToUpDown(bot)})`
+  }
+}
+
+function botToNameString(bot) {
+  return `${bot.state.name} (${bot.ble.id})`
+}
+
+// this function is used when the island first comes up
+async function correctBotState(bot) {
+  if (bot.ble.state !== bot.state.on) {
+    setBotState(bot, botToUpDown(bot))
+  } else {
+    globals.logger.debug({ role: 'breadcrumb' }, `No action necessary for switchbot ${botToNameString(bot)}.`)
+  }
+}
+
+function findBotInState(id) {
+  const index = this.currentState.switchbots.findIndex((botToFind) => {
+    return botToFind.id === bot.id
+  })
+
+  return [this.currentState.switchbots[index], index]
+}
+
+// this function is used when the island receives mqtt messages on onTopic or offTopic
+// desiredState is a boolean here
+async function mutateBotState(bot, desiredState) {
+  if (findBotInState(bot.id)[0].on !== desiredState) {
+    setBotState(bot, botToUpDown(bot, desiredState))
+    updateReportedShadow(set({}, `modules[${this.stateKey}].switchbots[${index}].on`, desiredState))
+  } else {
+    globals.logger.debug({ role: 'breadcrumb' }, `No action necessary for switchbot ${botToNameString(bot)}.`)
+  }
+}
+
+// newState is "up" or "down" by this point
+async function setBotState(bot, newState) {
+    globals.logger.debug({ role: 'breadcrumb' }, `Changing state from ${invert(newState)} to ${newState} for switchbot ${botToNameString(bot)}...`)
+    promises.push(bot.ble[newState]().then(() => {
+      globals.logger.debug({ role: 'breadcrumb' }, `Changed state from ${invert(newState)} to ${newState} for switchbot ${botToNameString(bot)}.`)
+    }).catch((err) => {
+      globals.logger.debug({ role: 'breadcrumb' }, `Failed to change state from ${invert(newState)} to ${newState} for switchbot ${botToNameString(bot)}.`)
+    }))
+}
+
+async function enableBot(bot) {
+  const promises = []
+
+  correctBotState(bot)
+
+
+  if (bot.state.onTopic) {
+    globals.logger.debug(`Subscribing bot ${botToNameString(bot)} to ON notifications on mqtt topic ${bot.state.onTopic}...`)
+    promises.push(
+      globals.connection.subscribe(bot.state.onTopic, mqtt.QoS.AtLeastOnce, turnOnBot.bind(bot))
+      .then(() => globals.logger.debug(`Subscribed bot ${botToNameString(bot)} to ON notifications on mqtt topic ${bot.state.onTopic}.`))
+    )
+  }
+
+  if (bot.state.offTopic) {
+    globals.logger.debug(`Subscribing bot ${botToNameString(bot)} to OFF notifications on mqtt topic ${bot.state.offTopic}...`)
+    promises.push(
+      globals.connection.subscribe(bot.state.offTopic, mqtt.QoS.AtLeastOnce, turnOffBot.bind(bot))
+      .then(() => globals.logger.debug(`Subscribed bot ${botToNameString(bot)} to OFF notifications on mqtt topic ${bot.state.offTopic}.`))
+    )
+  }
+
+  return promises
+}
 
 async function enable(state) {
   globals.logger.info({ role: 'breadcrumb' }, `Enabling switchbots module to control ${state.switchbots.length} bots...`)
-  const bleFound = await switchbot.discover({ model: "H", duration: 5000 })
+  // const bleFound = await switchbot.discover({ model: "H", duration: 5000 })
   const botsToFind = state.switchbots
   const matchingBotsFound = []
   for(let i = 0; i < botsToFind.length; i++) {
-    const botToFind = botsToFind[i]
-    const botFound = bleFound.find((bot) => {
-      globals.logger.debug({ role: 'info' }, `Looking for bot with id ${botToFind.id}, comparing against ${bot.id}. They are ${bot.id === botToFind.id ? '' : 'not '}equal.`)
-      return bot.id === botToFind.id
-    })
     //TODO: we're not using bot.serviceData.battery or bot.serviceData.mode
-    if (botFound) matchingBotsFound.push({ ble: botFound, state: botToFind })
+    matchingBotsFound.push(
+      switchbot.discover({ model: 'H', duration: 5000, quick: true, id: botsToFind[i].id })
+      .then((botFound) => {
+        globals.logger.debug(`Found bot with id ${botsToFind.id}.`)
+        return { ble: botFound, state: botsToFind[i] }
+      })
+    )
   }
+
+  await Promise.all(matchingBotsFound)
 
   //TODO: Should this bail and not actually enable?
   if (botsToFind.length !== matchingBotsFound.length) {
