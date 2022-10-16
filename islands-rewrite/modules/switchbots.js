@@ -131,26 +131,9 @@ async function enable(state) {
   let promises = []
   for(let i = 0; i < matchingBotsFound.length; i++) {
     const bot = matchingBotsFound[i]
-    let desiredState = undefined
-    if ((bot.state.on && !bot.state.reverseOnOff) || (!bot.state.on && bot.state.reverseOnOff)) {
-      desiredState = 'down'
-    } else if ((!bot.state.on && !bot.state.reverseOnOff) || (bot.state.on && bot.state.reverseOnOff)) {
-      desiredState = 'up'
-    }
-
-    if (bot.ble.state !== desiredState) {
-      globals.logger.debug({ role: 'breadcrumb' }, `Changing state from ${desiredState === 'up' ? 'down' : 'up'} to ${desiredState === 'up' ? 'down' : 'up'} for switchbot ${bot.state.name} (${bot.ble.id})...`)
-      globals.logger.debug({ role: 'blob', blob: bot.ble }, 'BLE bot object:')
-      globals.logger.debug({ role: 'info' }, `typeof up: ${typeof bot.ble.up}`)
-      promises.push(bot.ble[desiredState]().then(() => {
-        globals.logger.debug({ role: 'breadcrumb' }, `Changed state from ${desiredState === 'up' ? 'down' : 'up'} to ${desiredState === 'up' ? 'down' : 'up'} for switchbot ${bot.state.name} (${bot.ble.id}).`)
-      }).catch((err) => {
-        globals.logger.error({ err }, `Failed to change state from ${desiredState === 'up' ? 'down' : 'up'} to ${desiredState === 'up' ? 'down' : 'up'} for switchbot ${bot.state.name} (${bot.ble.id}).`)
-      }))
-    } else {
-      globals.logger.debug({ role: 'breadcrumb' }, `No action necessary for switchbot ${bot.state.name} (${bot.ble.id}).`)
-    }
+    enableBot(matchingBotsFound[i])
   }
+
   await Promise.all(promises)
 
   globals.logger.info({ role: 'breadcrumb' }, `Enabled switchbots module, controlling ${promises.length} bots.`)
