@@ -15,7 +15,7 @@
     "aws-iot-device-sdk-v2": "1.18.0",
     "bme680-sensor": "^1.1.0",
     "lodash": "^4.17.21",
-    "node-switchbot": "^1.4.1",
+    "node-switchbot": "^1.9.1",
     "pino": "^8.5.0",
     "pino-pretty": "^9.1.0",
     "pm2": "^5.2.0",
