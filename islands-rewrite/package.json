@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-iot-device-sdk-v2": "1.18.0",
+    "bme280": "^2.1.1",
     "bme680-sensor": "^1.1.0",
     "lodash": "^4.17.21",
     "node-switchbot": "^1.9.1",
