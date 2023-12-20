@@ -1,9 +1,9 @@
 {
-  "name": "skidaway",
-  "certId": "fdc42d18d9d019901ece2be315f58dcd6d99280e66e7769470ec879ae281954b",
-  "certFilePath": "/home/pi/islands/skidaway-certificate.pem.cert",
-  "privateKeyFilePath": "/home/pi/islands/skidaway-private.pem.key",
-  "awsCertFilePath": "/home/pi/islands/AmazonRootCA1.pem",
+  "name": "skeppsholmen",
+  "certId": "b58c3cf965f9e7a9b6223e1913bbf4ed8b50b46f0d9c4671ff7ec5712e651745",
+  "certFilePath": "/home/pi/.ssh/islands/skeppsholmen-certificate.pem.crt",
+  "privateKeyFilePath": "/home/pi/.ssh/islands/skeppsholmen-private.pem.key",
+  "awsCertFilePath": "/home/pi/.ssh/islands/AmazonRootCA1.pem",
   "endpoint": "ayecs2a13r9pv-ats.iot.us-west-2.amazonaws.com",
-  "publicKeyFilePath": "/home/pi/islands/skidaway-public.pem.key"
+  "publicKeyFilePath": "/home/pi/.ssh/islands/skeppsholmen-public.pem.key"
 }
