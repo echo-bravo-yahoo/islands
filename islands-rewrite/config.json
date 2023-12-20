@@ -1,8 +1,9 @@
 {
-  "name": "desktop",
-  "certId": "c09186c673cc532f7406f8bf04612c3a21b56c8e3cb58589f567d09ae89557c7",
-  "certFilePath": "/home/pi/workspace/islands/desktop-certificate.pem.crt",
-  "privateKeyFilePath": "/home/pi/workspace/islands/desktop-private.pem.key",
-  "awsCertFilePath": "/home/pi/workspace/islands/AmazonRootCA1.pem",
-  "endpoint": "ayecs2a13r9pv-ats.iot.us-west-2.amazonaws.com"
+  "name": "skidaway",
+  "certId": "fdc42d18d9d019901ece2be315f58dcd6d99280e66e7769470ec879ae281954b",
+  "certFilePath": "/home/pi/islands/skidaway-certificate.pem.cert",
+  "privateKeyFilePath": "/home/pi/islands/skidaway-private.pem.key",
+  "awsCertFilePath": "/home/pi/islands/AmazonRootCA1.pem",
+  "endpoint": "ayecs2a13r9pv-ats.iot.us-west-2.amazonaws.com",
+  "publicKeyFilePath": "/home/pi/islands/skidaway-public.pem.key"
 }
