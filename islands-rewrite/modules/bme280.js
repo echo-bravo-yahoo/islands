@@ -1,79 +1,40 @@
-import { readFile, unlinkSync } from 'fs'
-import { exec } from 'child_process'
-
-import { mqtt } from 'aws-iot-device-sdk-v2'
+import { bme280 } from 'bme280'
 
 import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
-let pythonChild
-// the last time we read the handoff file
-let lastTimestamp = 0
-let interval
+let interval, sensor
 
-async function register() {
-}
-
-async function cleanUp() {
-  if (pythonChild) {
-    globals.logger.info({ role: 'breadcrumb' }, 'Killing python child process...')
-    pythonChild.kill()
-    globals.logger.info({ role: 'breadcrumb' }, 'Killed python child process.')
+async function publishReading() {
+  const sensorData = await sensor.read()
+  const payload = {
+    temp: (sensorData.temperature) * 1.8 + 32,
+    humidity: sensorData.humidity,
+    pressure: sensorData.pressure
+    // TODO: is this worth implementing?
+    // altitude:
   }
-  globals.logger.info({ role: 'breadcrumb' }, 'Clearing handoff polling interval...')
-  clearInterval(interval)
-  globals.logger.info({ role: 'breadcrumb' }, 'Cleared handoff polling interval.')
+  globals.logger.info({ role: 'breadcrumb' }, 'Publishing new bme280 data.')
+  globals.logger.info({ role: 'blob', blob: payload }, `bme280 data, published to data/weather/${globals.island.location || 'unknown'}: ${JSON.stringify(payload)}`)
+  globals.connection.publish(`data/weather/${globals.island.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
 }
 
 async function enable() {
   globals.logger.info({ role: 'breadcrumb' }, `Enabling bme280...`)
-  this.enabled = true
-
-  globals.logger.info({ role: 'breadcrumb' }, 'Starting up python script...')
-  pythonChild = exec('python3 ./python/weather-and-light.py', (error, stdout, stderr) => {
-    if (error) { globals.logger.error({ err: error }, error.message) }
-    if (stderr) { globals.logger.error({ err: stderr}, stderr) }
-  })
-  globals.logger.info({ role: 'breadcrumb' }, 'Started up python script.')
-
-
-  // we delete the old handoff file to not re-read it
-  globals.logger.info({ role: 'breadcrumb' }, 'Deleting old handoff file...')
-  try {
-    unlinkSync('./handoff.json')
-    globals.logger.info({ role: 'breadcrumb' }, 'Deleted old handoff file.')
-  } catch (e) {
-    if (e.code === 'ENOENT') {
-      globals.logger.info({ role: 'breadcrumb' }, 'No old handoff file to delete.')
-    } else {
-      throw e
-    }
-  }
-
-  interval = setInterval(() => {
-    readFile('./ipc/handoff.json', (err, data) => {
-      if (!data) return
-      let handoff
-      try {
-        handoff = JSON.parse(data.toString())
-      } catch (error) {
-        globals.logger.error({ err: error }, 'Error parsing handoff file')
-        return
-      }
-      if (handoff.timestamp > lastTimestamp) {
-        lastTimestamp = handoff.timestamp
-        globals.logger.info({ role: 'breadcrumb' }, `New handoff found, publishing new bme280 data to data/weather/${globals.island.location || 'unknown'}: ${JSON.stringify(handoff)}`)
-        globals.connection.publish(`data/weather/${globals.island.location || 'unknown'}`, handoff, mqtt.QoS.AtLeastOnce)
-      }
-    })
-  }, 333)
+  sensor = await bme280.open()
+  interval = setInterval(publishReading, 60*1000)
   globals.logger.info({ role: 'breadcrumb' }, `Enabled bme280.`)
 }
 
+bme280.open().then(async sensor => {
+  console.log(await sensor.read())
+}).catch(console.log)
+
+
 async function disable() {
   globals.logger.info({ role: 'breadcrumb' }, `Disabling bme280...`)
-  this.enabled = false
-  await cleanUp()
+  clearInterval(interval)
+  await sensor.close()
   globals.logger.info({ role: 'breadcrumb' }, `Disabled bme280.`)
 }
 
@@ -97,6 +58,9 @@ async function disable() {
   }
 }
 */
+
+async function register() {
+}
 
 const bme280 = new Module('bme280', enable, disable, register)
 export default bme280
