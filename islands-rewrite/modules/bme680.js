@@ -9,9 +9,10 @@ import { Module } from './generic-module.js'
 
 let interval
 
-async function publichReading() {
+async function publishReading() {
   const sensorData = await sensor.getSensorData()
   const payload = {
+    metadata: { island: globals.island.name, timestamp: new Date() },
     temp: (sensorData.data.temperature) * 1.8 + 32,
     gas: sensorData.data.gas_resistance,
     humidity: sensorData.data.humidity,

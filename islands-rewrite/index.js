@@ -23,7 +23,8 @@ export const globals = {
   logger: loggerFactory({ level: 'debug' }),
   island: {
     version: undefined,
-    location: undefined
+    location: undefined,
+    name: undefined
   }
 }
 
