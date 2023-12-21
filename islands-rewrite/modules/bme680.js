@@ -7,7 +7,7 @@ const sensor = new Bme680(1, 0x77)
 import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
-let interval, sensor
+let interval
 
 async function publichReading() {
   const sensorData = await sensor.getSensorData()

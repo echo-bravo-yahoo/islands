@@ -1,3 +1,5 @@
+import { mqtt } from 'aws-iot-device-sdk-v2'
+
 import bme280Sensor from 'bme280'
 
 import { globals } from '../index.js'
