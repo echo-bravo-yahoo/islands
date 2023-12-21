@@ -10,7 +10,7 @@ let interval, sensor
 async function publishReading() {
   const sensorData = await sensor.read()
   const payload = {
-    metadata: { island: globals.island.name, timestamp: new Date() },
+    metadata: { island: globals.config.name, timestamp: new Date() },
     temp: (sensorData.temperature) * 1.8 + 32,
     humidity: sensorData.humidity,
     pressure: sensorData.pressure
