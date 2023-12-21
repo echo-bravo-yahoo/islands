@@ -1,4 +1,4 @@
-import { bme280 } from 'bme280'
+import bme280Sensor from 'bme280'
 
 import { globals } from '../index.js'
 import { Module } from './generic-module.js'
@@ -21,15 +21,10 @@ async function publishReading() {
 
 async function enable() {
   globals.logger.info({ role: 'breadcrumb' }, `Enabling bme280...`)
-  sensor = await bme280.open()
+  sensor = await bme280Sensor.open({ i2cAddress:  0x76 })
   interval = setInterval(publishReading, 60*1000)
   globals.logger.info({ role: 'breadcrumb' }, `Enabled bme280.`)
 }
-
-bme280.open().then(async sensor => {
-  console.log(await sensor.read())
-}).catch(console.log)
-
 
 async function disable() {
   globals.logger.info({ role: 'breadcrumb' }, `Disabling bme280...`)
