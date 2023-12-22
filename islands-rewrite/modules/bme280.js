@@ -32,7 +32,7 @@ async function enable() {
 async function disable() {
   globals.logger.info({ role: 'breadcrumb' }, `Disabling bme280...`)
   clearInterval(interval)
-  await sensor.close()
+  if (sensor) await sensor.close()
   globals.logger.info({ role: 'breadcrumb' }, `Disabled bme280.`)
 }
 

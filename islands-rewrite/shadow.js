@@ -10,8 +10,10 @@ async function subToShadowUpdate() {
     try {
       function updateAccepted(error, response) {
         if (response) {
-          globals.logger.info({ role: 'breadcrumb' }, 'Updating modules in response to IoT shadow update.')
+          globals.logger.info({ role: 'breadcrumb' }, 'Updating modules and configs in response to IoT shadow update.')
           globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow update response:')
+
+          // TODO: these are just string indices, 0, 1, 2, etc. lol.
           for (const module in globals.modules) {
             globals.modules[module].handleState({
               desired: response.state.desired,
@@ -19,7 +21,16 @@ async function subToShadowUpdate() {
               reported: response.state.reported
             })
           }
-          globals.logger.info({ role: 'breadcrumb' }, 'Updated modules in response to IoT shadow update.')
+
+          // TODO: these are just string indices, 0, 1, 2, etc. lol.
+          for (const config in globals.configs) {
+            globals.configs[config].handleState({
+              desired: response.state.desired,
+              delta: response.state.delta,
+              reported: response.state.reported
+            })
+          }
+          globals.logger.info({ role: 'breadcrumb' }, 'Updated modules and configs in response to IoT shadow update.')
         }
 
         if (error || !response) {
@@ -69,7 +80,8 @@ async function subToShadowGet() {
   return new Promise(async (resolve, reject) => {
     try {
       function getAccepted(err, response) {
-          globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow get response:')
+        globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow get response:')
+        // TODO: these are just string indices, 0, 1, 2, etc. lol.
         for (const module in globals.modules) {
           globals.modules[module].handleState({
             desired: response.state.desired,
@@ -77,9 +89,14 @@ async function subToShadowGet() {
             reported: response.state.reported
           })
         }
-        globals.island.location = get(response, 'state.desired.island.location', 'unknown')
-        if (globals.island.location === 'unknown') {
-          globals.logger.error({ err }, 'Island does not have a location.')
+
+        // TODO: these are just string indices, 0, 1, 2, etc. lol.
+        for (const config in globals.configs) {
+          globals.configs[config].handleState({
+            desired: response.state.desired,
+            delta: response.state.delta,
+            reported: response.state.reported
+          })
         }
 
         if (err || !response) {
@@ -131,9 +148,17 @@ async function subToShadowDelta() {
 
         globals.logger.info({ role: 'breadcrumb' }, 'Updating modules in response to shadow delta...')
           globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow delta response:')
+
+        // TODO: these are just string indices, 0, 1, 2, etc. lol.
         for (const module in globals.modules) {
           globals.modules[module].handleDeltaState(response.state)
         }
+
+        // TODO: these are just string indices, 0, 1, 2, etc. lol.
+        for (const config in globals.configs) {
+          globals.configs[config].handleDeltaState(response.state)
+        }
+
         globals.logger.info({ role: 'breadcrumb' }, 'Updated modules in response to shadow delta.')
 
         resolve(true)
@@ -151,8 +176,7 @@ async function subToShadowDelta() {
       globals.logger.info({ role: 'breadcrumb' }, "Subscribed to Delta events.")
 
       resolve(true)
-    }
-    catch (error) {
+    } catch (error) {
       reject(error)
     }
   })
@@ -161,9 +185,7 @@ async function subToShadowDelta() {
 async function getCurrentShadow() {
   return new Promise(async (resolve, reject) => {
     try {
-      const getShadow = {
-        thingName: globals.name
-      }
+      const getShadow = { thingName: globals.name }
 
       shadowUpdateComplete = false
       globals.logger.info({ role: 'breadcrumb' }, "Requesting current shadow state...")
@@ -181,23 +203,21 @@ async function getCurrentShadow() {
 }
 
 export function updateReportedShadow(newValue) {
+  globals.logger.error({ reported: newValue }, 'Updating reported shadow.')
   return updateWholeShadow({ reported: newValue })
 }
 
 export function updateDesiredShadow(newValue) {
+  globals.logger.error({ desired: newValue }, 'Updating desired shadow.')
   return updateWholeShadow({ desired: newValue })
 }
 
 export function updateWholeShadow(newState) {
   return new Promise(async (resolve, reject) => {
     try {
-      var updateShadow = {
-        state: newState,
-        thingName: globals.name
-      }
+      const updateShadow = { state: newState }
 
-      globals.logger.info({ role: 'breadcrumb' }, 'Publishing new shadow value.')
-      globals.logger.debug({ role: 'blob', blob: updateShadow }, 'New shadow value:')
+      globals.logger.info({ role: 'blob', blob: updateShadow }, 'Publishing new shadow value:')
       await globals.shadow.publishUpdateShadow(
         updateShadow,
         mqtt.QoS.AtLeastOnce)
