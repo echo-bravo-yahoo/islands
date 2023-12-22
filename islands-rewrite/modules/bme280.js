@@ -10,7 +10,7 @@ let interval, sensor
 async function publishReading() {
   const sensorData = await sensor.read()
   const payload = {
-    metadata: { island: globals.config.name, timestamp: new Date() },
+    metadata: { island: globals.configs[0].currentState.name, timestamp: new Date() },
     temp: (sensorData.temperature) * 1.8 + 32,
     humidity: sensorData.humidity,
     pressure: sensorData.pressure
@@ -18,8 +18,8 @@ async function publishReading() {
     // altitude:
   }
   globals.logger.info({ role: 'breadcrumb' }, 'Publishing new bme280 data.')
-  globals.logger.info({ role: 'blob', blob: payload }, `bme280 data, published to data/weather/${globals.island.location || 'unknown'}: ${JSON.stringify(payload)}`)
-  globals.connection.publish(`data/weather/${globals.island.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
+  globals.logger.info({ role: 'blob', blob: payload }, `bme280 data, published to data/weather/${globals.configs[0].currentState.location || 'unknown'}: ${JSON.stringify(payload)}`)
+  globals.connection.publish(`data/weather/${globals.configs[0].currentState.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
 }
 
 async function enable() {
