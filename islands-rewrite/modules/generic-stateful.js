@@ -31,7 +31,7 @@ export class Stateful {
 
     let merged
     if (delta) {
-      merged = merge({}, this.currentState, delta)
+      merged = merge({}, this.currentState, reported, delta)
     } else if (desired) {
       merged = merge({}, this.currentState, desired)
     } else {
