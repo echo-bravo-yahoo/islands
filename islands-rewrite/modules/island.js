@@ -1,5 +1,5 @@
 import { Config } from './generic-config.js'
-import { updateDesiredShadow } from '../shadow.js'
+import { updateDesiredShadow, updateReportedShadow } from '../shadow.js'
 import { globals } from '../index.js'
 
 export class Island extends Config {
@@ -8,7 +8,9 @@ export class Island extends Config {
   }
 
   triggerStateChange() {
-    // this will always try to update the shadow
+    // TODO: this will certainly cause bugs once i try to implement auto-update
+    // always try to update the shadows
+    updateReportedShadow({ [this.stateKey]: globals[this.stateKey] })
     updateDesiredShadow({ [this.stateKey]: globals[this.stateKey] })
   }
 
