@@ -18,14 +18,10 @@ export const globals = {
   shadow: undefined,
   connection: undefined,
   modules: [ bme280, bme680, thermalPrinter, switchbots ],
-  config: [ island ],
+  configs: [ island ],
+  // TODO: figure out how to remove this without breaking initial bootstrapping
   name: config.name,
-  logger: loggerFactory({ level: 'debug' }),
-  island: {
-    version: undefined,
-    location: undefined,
-    name: undefined
-  }
+  logger: loggerFactory({ level: 'debug' })
 }
 
 globals.logger.info({ role: 'breadcrumb' }, 'Connecting...')
@@ -39,8 +35,7 @@ globals.logger.info({role: 'breadcrumb' }, 'Identifying application version...')
 const commitNumber = spawn('git', ['rev-list', '--count', 'HEAD'])
 commitNumber.stdout.on('data', (data) => {
   const version = Number(data)
-  globals.island.version = version
-  island.triggerStateChange()
+  globals.configs[0].setState('version', version)
   globals.logger.info({role: 'breadcrumb' }, `Identified application version: ${version}`)
 })
 
