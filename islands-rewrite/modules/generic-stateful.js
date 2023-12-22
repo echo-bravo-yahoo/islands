@@ -18,6 +18,7 @@ export class Stateful {
     this.handleState({ delta })
   }
 
+  // TODO: mostly a carbon copy of generic-module.genericHandleState
   async genericHandleState({ desired: _desired, delta: _delta, reported: _reported, path, type, shortPath }) {
     if (type === shortPath) {
       globals.logger.info({ role: 'breadcrumb' }, `Received new state for ${shortPath}.`)
@@ -27,19 +28,24 @@ export class Stateful {
     const desired = get(_desired, path)
     const delta = get(_delta, path)
     const reported = get(_reported, path)
-    const merged = merge({ ...this.currentState }, delta)
+
+    let merged
+    if (delta) {
+      merged = merge({}, this.currentState, delta)
+    } else if (desired) {
+      merged = merge({}, this.currentState, desired)
+    } else {
+      merged = merge({}, this.currentState, reported)
+    }
 
     function logIfDefined(name, value) {
       return `${name} is currently ${value !== undefined ? 'defined:' : 'undefined.'}`
     }
 
-    globals.logger.debug({ role: 'blob', tags: ['shadow'], state: { delta, desired, reported, currentState: this.currentState, merged } }, 'Shadow state:')
+    globals.logger.debug({ role: 'blob', tags: ['shadow'], state: { delta, desired, reported, currentState: this.currentState, merged }, path, shortPath }, 'Shadow state:')
 
-    if (this.enabled === undefined && desired === undefined) {
+    if (desired === undefined && !isEqual(merged, reported)) {
       globals.logger.info({ role: 'breadcrumb', tags: ['shadow'] }, `${shortPath} not specified in shadow. Skipping.`)
-    } else if (this.enabled === undefined) {
-      globals.logger.info({ role: 'breadcrumb', tags: ['shadow'] }, `${shortPath} not yet enabled or disabled. Setting ${shortPath} to ${desired.enabled ? 'enabled' : 'disabled'} to match desired state.`)
-      this.handleStateChange(desired, reported)
     } else if (delta && !isEqual(this.currentState, merged)) {
       globals.logger.info({ role: 'breadcrumb', tags: ['shadow'] }, `Modifying ${shortPath} to reflect a merge of delta state and current state.`)
       globals.logger.debug({ role: 'blob', tags: ['shadow'], currentState: this.currentState }, logIfDefined('Merged state', this.currentState))
