@@ -1,11 +1,13 @@
 (async () => {
   // libraries
   const express = require('express')
+  const cors = require('cors')
   const { IoTDataPlaneClient, PublishCommand } = require("@aws-sdk/client-iot-data-plane")
   // import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane"
   const path = require('path')
   const { readFileSync } = require('fs')
   const AWSXRay = require('aws-xray-sdk')
+  const { execSync } = require('child_process')
 
 
   // config and constructed objects
@@ -17,11 +19,18 @@
   const trace = false
 
   // middleware config
+  app.use(cors()) // enable all CORS requests
   app.use(express.json())
   if (trace) app.use(AWSXRay.express.openSegment('MyApp'))
 
   app.get('/app', function(req, res) {
     res.status(200).sendFile(path.join(__dirname, './app.html'))
+  })
+
+  app.post('/desktop/monitor/disable', async function (req, res) {
+    execSync('nircmd.exe monitor off')
+    execSync('nircmd.exe mutesysvolume 1')
+    res.status(200).send()
   })
 
   app.post('/thermal-printer', async function(req, res) {
@@ -115,8 +124,9 @@
 
   /* istanbul ignore next */
   if (!module.parent) {
-    app.listen(3009, '0.0.0.0')
-    console.log('Express started on port 3009')
+    let port = 3010
+    app.listen(port)
+    console.log(`Express started on port ${port}`)
   }
 
   if (trace) app.use(AWSXRay.express.closeSegment())

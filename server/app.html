@@ -28,6 +28,16 @@
         feedback(res)
       }
 
+      async function disableMonitor() {
+        const url = `/desktop/monitor/disable`
+        const fetchArgs = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }
+        const res = await fetch(url, fetchArgs).then((res) => res.json())
+        feedback(res)
+      }
+
       async function print(event) {
         const payload = { payload: event.target.parentElement.querySelector('textarea').value, timestamp: Date.now() }
         const url = '/thermal-printer'
@@ -73,6 +83,10 @@
     <div class="container">
       Grow lights
       <button onclick="growLights()">Toggle</button>
+    </div>
+    <div class="container">
+      Desktop monitor
+      <button onclick="disableMonitor()">Turn off</button>
     </div>
     <div class="container" id="response">
     </div>

@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-iot-data-plane": "^3.95.0",
     "aws-xray-sdk": "^3.3.5",
+    "cors": "^2.8.5",
     "express": "^4.18.1",
     "nodemon": "^2.0.16"
   }
