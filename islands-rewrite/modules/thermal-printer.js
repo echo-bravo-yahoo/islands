@@ -74,7 +74,7 @@ async function enable() {
     serialPort.on('open',function() {
       printer = new Printer(serialPort)
       printer.on('ready', async function() {
-        const topic = `commands/printer/${globals.island.location}`
+        const topic = `commands/printer/${globals.configs[0].location}`
         log({}, `Enabled thermal printer serial connection.`)
         log({}, `Enabling thermal printer mqtt subscription to topic ${topic}...`)
         await globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, handlePrintRequest)
