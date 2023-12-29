@@ -80,7 +80,7 @@ async function subToShadowGet() {
   return new Promise(async (resolve, reject) => {
     try {
       function getAccepted(err, response) {
-        globals.logger.debug({ role: 'blob', tags: ['shadow'], response }, 'Shadow get response:')
+        globals.logger.debug({ role: 'blob', tags: ['shadow'], response: { ... response, metadata: undefined } }, 'Shadow get response:')
         // TODO: these are just string indices, 0, 1, 2, etc. lol.
         for (const module in globals.modules) {
           globals.modules[module].handleState({
@@ -100,10 +100,10 @@ async function subToShadowGet() {
         }
 
         if (err || !response) {
-          globals.logger.error({ err: 'breadcrumb' }, '')
+          globals.logger.error(err)
         }
         shadowUpdateComplete = true
-        resolve(true)
+        resolve(response.state)
       }
 
       function getRejected(err, response) {
@@ -116,7 +116,6 @@ async function subToShadowGet() {
         reject(details)
       }
 
-      globals.logger.info({ role: 'breadcrumb' }, 'Subscribing to get shadow events...')
       const getShadowSubRequest = { thingName: globals.name }
 
       let promises = []
@@ -129,10 +128,12 @@ async function subToShadowGet() {
         getShadowSubRequest,
         mqtt.QoS.AtLeastOnce,
         (error, response) => getRejected(error, response)))
-      await Promise.all(promises)
-      globals.logger.info({ role: 'breadcrumb' }, 'Subscribed to get shadow events.')
 
-      resolve(true)
+      promises.push(getCurrentShadow())
+
+      await Promise.all(promises)
+
+      globals.logger.info({ role: 'breadcrumb' }, 'Subscribed to get shadow events. Waiting for first shadow state before continuing.')
     } catch (err) {
       globals.logger.error({ err }, 'Failed to subscribe to get shadow events.')
       reject(err)
@@ -188,11 +189,9 @@ async function getCurrentShadow() {
       const getShadow = { thingName: globals.name }
 
       shadowUpdateComplete = false
-      globals.logger.info({ role: 'breadcrumb' }, "Requesting current shadow state...")
       await globals.shadow.publishGetShadow(
         getShadow,
         mqtt.QoS.AtLeastOnce)
-      globals.logger.info({ role: 'breadcrumb' }, "Current shadow state requested.")
 
       resolve(true)
     }
@@ -203,25 +202,23 @@ async function getCurrentShadow() {
 }
 
 export function updateReportedShadow(newValue) {
-  globals.logger.error({ reported: newValue }, 'Updating reported shadow.')
   return updateWholeShadow({ reported: newValue })
 }
 
 export function updateDesiredShadow(newValue) {
-  globals.logger.error({ desired: newValue }, 'Updating desired shadow.')
   return updateWholeShadow({ desired: newValue })
 }
 
 export function updateWholeShadow(newState) {
   return new Promise(async (resolve, reject) => {
     try {
-      const updateShadow = { state: newState }
+      // thingName is required by AWS IoT to match the request to the Thing
+      const updateShadow = { state: newState, thingName: globals.name }
 
       globals.logger.info({ role: 'blob', blob: updateShadow }, 'Publishing new shadow value:')
       await globals.shadow.publishUpdateShadow(
         updateShadow,
         mqtt.QoS.AtLeastOnce)
-      globals.logger.info({ role: 'breadcrumb' }, 'Published new shadow value.')
     } catch (err) {
       globals.logger.error({ err }, 'Failed to publish new shadow value.')
       reject(err)
@@ -230,14 +227,22 @@ export function updateWholeShadow(newState) {
   })
 }
 
-export async function setupShadow() {
-  globals.shadow = new iotshadow.IotShadowClient(globals.connection)
+export async function getInitialShadowState() {
+  try {
+    globals.shadow = new iotshadow.IotShadowClient(globals.connection)
 
+    await subToShadowGet()
+    // this is called in subToShadowGet - oops
+    // await getCurrentShadow()
+  } catch (err) {
+    globals.logger.fatal({ err }, 'Failed to set up AWS IOT Shadow. Terminating now.')
+  }
+}
+
+export async function setupShadow() {
   try {
     await subToShadowUpdate()
-    await subToShadowGet()
     await subToShadowDelta()
-    await getCurrentShadow()
   } catch (err) {
     globals.logger.fatal({ err }, 'Failed to set up AWS IOT Shadow. Terminating now.')
   }

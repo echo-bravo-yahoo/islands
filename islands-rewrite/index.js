@@ -4,7 +4,7 @@ import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const config = require('./config.json')
 
-import { setupShadow } from './shadow.js'
+import { setupShadow, getInitialShadowState } from './shadow.js'
 import { buildConnection } from './mqtt.js'
 import { setupProcess } from './process.js'
 import bme280 from './modules/bme280.js'
@@ -24,11 +24,14 @@ export const globals = {
   logger: loggerFactory({ level: 'debug' })
 }
 
-globals.logger.info({ role: 'breadcrumb' }, 'Connecting...')
 globals.connection = buildConnection()
 await globals.connection.connect()
-globals.logger.info({ role: 'breadcrumb' }, 'Connection completed.')
 
+// this is necessary for modules to know everything all at once, instead of
+// them trying to piece things together from multiple deltas
+await getInitialShadowState()
+
+// then register the other stuff
 await setupShadow()
 
 globals.logger.info({role: 'breadcrumb' }, 'Identifying application version...')
