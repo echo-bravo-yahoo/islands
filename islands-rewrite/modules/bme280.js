@@ -1,39 +1,70 @@
 import { mqtt } from 'aws-iot-device-sdk-v2'
 
+import get from 'lodash/get.js'
+
 import bme280Sensor from 'bme280'
 
 import { globals } from '../index.js'
-import { Module } from './generic-module.js'
+import { Sensor } from './generic-sensor.js'
 
-let interval, sensor
+export class BME280 extends Sensor {
+  constructor(stateKey) {
+    super(stateKey)
 
-async function publishReading() {
-  const sensorData = await sensor.read()
-  const payload = {
-    metadata: { island: globals.configs[0].currentState.name, timestamp: new Date() },
-    temp: (sensorData.temperature) * 1.8 + 32,
-    humidity: sensorData.humidity,
-    pressure: sensorData.pressure
-    // TODO: is this worth implementing?
-    // altitude:
+    this.paths = {
+      'virtual': { handler: this.copyState, order: 0 },
+      'enabled': { handler: this.handleEnabled, order: 1 },
+      'reporting': { handler: this.handleReporting, order: 2 },
+    }
   }
-  globals.logger.info({ role: 'breadcrumb' }, 'Publishing new bme280 data.')
-  globals.logger.info({ role: 'blob', blob: payload }, `bme280 data, published to data/weather/${globals.configs[0].currentState.location || 'unknown'}: ${JSON.stringify(payload)}`)
-  globals.connection.publish(`data/weather/${globals.configs[0].currentState.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
-}
 
-async function enable() {
-  globals.logger.info({ role: 'breadcrumb' }, `Enabling bme280...`)
-  sensor = await bme280Sensor.open({ i2cAddress:  0x76 })
-  interval = setInterval(publishReading, 60*1000)
-  globals.logger.info({ role: 'breadcrumb' }, `Enabled bme280.`)
-}
+  async enable() {
+    if (!this.currentState.virtual) {
+      this.sensor = await bme280Sensor.open({ i2cAddress: Number(this.currentState.i2cAddress) || 0x76 })
+    }
 
-async function disable() {
-  globals.logger.info({ role: 'breadcrumb' }, `Disabling bme280...`)
-  clearInterval(interval)
-  if (sensor) await sensor.close()
-  globals.logger.info({ role: 'breadcrumb' }, `Disabled bme280.`)
+    this.setupPublisher()
+    this.info({}, `Enabled bme280.`)
+    this.currentState.enabled = true
+  }
+
+  async disable() {
+    clearInterval(this.interval)
+    if (this.sensor) await this.sensor.close()
+    this.info({}, `Disabled bme280.`)
+    this.currentState.enabled = false
+  }
+
+  async publishReading() {
+    const virtualPayload = {
+      metadata: { island: globals.configs[0].currentState.name, timestamp: new Date() },
+      temp: 72 + get(this.currentState, 'offsets.temp', 0),
+      humidity: 20 + get(this.currentState, 'offsets.humidity', 0),
+      pressure: 1000 + get(this.currentState, 'offsets.pressure', 0)
+    }
+
+    if (this.currentState.virtual) {
+      this.info({ role: 'blob', blob: virtualPayload }, `Publishing new bme280 data to data/weather/${globals.configs[0].currentState.location || 'unknown'}: ${JSON.stringify(virtualPayload)}`)
+      return
+    }
+
+    const sensorData = await this.sensor.read()
+    const payload = {
+      metadata: { island: globals.configs[0].currentState.name, timestamp: new Date() },
+      temp: (sensorData.temperature) * 1.8 + 32 + get(this.currentState, 'offsets.temp', 0),
+      humidity: sensorData.humidity + get(this.currentState, 'offsets.humidity', 0),
+      pressure: sensorData.pressure + get(this.currentState, 'offsets.pressure', 0)
+      // TODO: is this worth implementing?
+      // altitude:
+    }
+
+    globals.connection.publish(`data/weather/${globals.configs[0].currentState.location || 'unknown'}`, payload, mqtt.QoS.AtLeastOnce)
+
+    this.info({ role: 'blob', blob: payload }, `Publishing new bme280 data to data/weather/${globals.configs[0].currentState.location || 'unknown'}: ${JSON.stringify(payload)}`)
+  }
+
+  async register() {
+  }
 }
 
 /*
@@ -57,8 +88,5 @@ async function disable() {
 }
 */
 
-async function register() {
-}
-
-const bme280 = new Module('bme280', enable, disable, register)
+const bme280 = new BME280('bme280')
 export default bme280
