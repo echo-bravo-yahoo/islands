@@ -1,7 +1,9 @@
 import { globals } from './index.js'
+
 // flag to determine if we should run cleanup code
 let dirty = true
 
+// pino.flush(cb) never calls the cb function, and it appears to flush fine without it
 async function cleanUp() {
   if (dirty) {
     dirty = false
@@ -11,9 +13,9 @@ async function cleanUp() {
     }
     await Promise.all(promises)
 
-    globals.logger.info({ role: 'breadcrumb' }, 'Disconnecting from AWS IoT...')
+    globals.logger.info({ role: 'breadcrumb' }, 'Disconnecting from AWS IoT as part of process cleanup...')
     await globals.connection.disconnect()
-    globals.logger.info({ role: 'breadcrumb' }, 'Disconnected from AWS IoT.')
+    globals.logger.info({ role: 'breadcrumb' }, 'Disconnected from AWS IoT as part of process cleanup.')
   }
 }
 
@@ -21,14 +23,14 @@ export function setupProcess(process) {
   process.on('exit', cleanUp)
 
   process.on('SIGTERM', (signal) => {
-    globals.logger.info({ role: 'breadcrumb' }, `Process ${process.pid} received a SIGTERM signal.`)
-    process.exit(0)
+    globals.logger.info({ role: 'breadcrumb' }, `Process ${process.pid} received SIGTERM signal. Terminating.`)
+    process.exit(1)
   })
 
   process.on('SIGINT', async (signal) => {
-    globals.logger.info({ role: 'breadcrumb' }, `Process ${process.pid} has been interrupted.`)
+    globals.logger.info({ role: 'breadcrumb' }, `Process ${process.pid} received SIGINT signal. Terminating.`)
     await cleanUp()
-    process.exit(0)
+    process.exit(1)
   })
 
   process.on('uncaughtException', async (err) => {

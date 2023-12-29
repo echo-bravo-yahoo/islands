@@ -17,10 +17,16 @@ export function buildConnection() {
   const clientConfig = config_builder.build()
   const client = new mqtt.MqttClient()
   const connection = client.new_connection(clientConfig)
+
   connection.on('connect', (session_present) => globals.logger.info({ role: 'breadcrumb', tags: ['mqtt'] }, `Connected to MQTT ${session_present ? 'with a new' : 'with an existing'} session.`))
+
   connection.on('disconnect', (session_present) => globals.logger.info({ role: 'breadcrumb', tags: ['mqtt'] }, `Disconnected from MQTT session.`))
+
   connection.on('error', (err) => globals.logger.error({ err, tags: ['mqtt'] }, `Error with MQTT session.`))
+
   connection.on('interrupt', (err) => globals.logger.error({ err, tags: ['mqtt'] }, `MQTT session interrupted.`))
+
   connection.on('resume', (err) => globals.logger.info({ role: 'breadcrumb', tags: ['mqtt'] }, `MQTT session resumed.`))
+
   return connection
 }
