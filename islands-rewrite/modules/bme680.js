@@ -33,13 +33,13 @@ export class BME680 extends Sensor {
       return
     }
 
-    const sensorData = await this.sensor.getSensorData()
+    const sensorData = (await this.sensor.getSensorData()).data
     const payload = {
       metadata: { island: globals.name, timestamp: new Date() },
       temp: (sensorData.temperature) * 1.8 + 32 + get(this.currentState, 'offsets.temp', 0),
       humidity: sensorData.humidity + get(this.currentState, 'offsets.humidity', 0),
       pressure: sensorData.pressure + get(this.currentState, 'offsets.pressure', 0),
-      gas: sensorData.data.gas_resistance + get(this.currentState, 'offsets.gas', 0)
+      gas: sensorData.gas_resistance + get(this.currentState, 'offsets.gas', 0)
       // TODO: is this worth implementing?
       // altitude:
     }
