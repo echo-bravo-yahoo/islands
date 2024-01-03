@@ -16,13 +16,6 @@ export class Sensor extends Module {
     this.interval = setInterval(this.publishReading.bind(this), this.getReportingInterval())
   }
 
-  async handleEnabled(newState) {
-    if (!this.currentState.enabled && newState.enabled)
-      return this.enable(newState)
-    if (this.currentState.enabled && !newState.enabled)
-      return this.disable(newState)
-  }
-
   async handleReporting(newState) {
     this.info({}, `Updating reporting interval from ${this.getReportingInterval()} to ${newState.reporting.interval}.`)
     this.currentState.reporting = newState.reporting
