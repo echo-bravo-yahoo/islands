@@ -30,6 +30,13 @@ export class Module extends Stateful {
     })
   }
 
+  async handleEnabled(newState) {
+    if (!this.currentState.enabled && newState.enabled)
+      return this.enable(newState)
+    if (this.currentState.enabled && !newState.enabled)
+      return this.disable(newState)
+  }
+
   async init(newState) {
     return this.updateState(newState)
   }
