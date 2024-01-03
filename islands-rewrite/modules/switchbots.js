@@ -96,6 +96,12 @@ export class Switchbots extends Module {
     // }
   }
 
+  async pressBot(bot) {
+    this.info(`Received MQTT request to press button.`)
+    await bot.ble.press()
+    this.debug(`Pressed button for bot ${this.botToNameString(bot)}.`)
+  }
+
   // newState is "up" or "down" by this point
   async setBotState(bot, newState, booleanDesiredState) {
     // console.log('bot', bot)
@@ -129,6 +135,14 @@ export class Switchbots extends Module {
       promises.push(
         globals.connection.subscribe(bot.state.offTopic, mqtt.QoS.AtLeastOnce, this.mutateBotState.bind(this, bot, false))
         .then(() => this.debug(`Subscribed bot ${this.botToNameString(bot)} to OFF notifications on mqtt topic ${bot.state.offTopic}.`))
+      )
+    }
+
+    if (bot.state.pressTopic) {
+      this.debug(`Subscribing bot ${this.botToNameString(bot)} to PRESS notifications on mqtt topic ${bot.state.pressTopic}...`)
+      promises.push(
+        globals.connection.subscribe(bot.state.offTopic, mqtt.QoS.AtLeastOnce, this.pressBot.bind(this, bot))
+        .then(() => this.debug(`Subscribed bot ${this.botToNameString(bot)} to PRESS notifications on mqtt topic ${bot.state.pressTopic}.`))
       )
     }
 
@@ -205,6 +219,23 @@ export class Switchbots extends Module {
   async register() {
   }
 }
+
+/*
+{
+  "enabled": true,
+    "switchbots": [
+      {
+        "id": "f84e19c8c70d",
+        "name": "test",
+        "on": true,
+        "onTopic": "dev/switch/on",
+        "offTopic": "dev/switch/off",
+        "pressTopic": "dev/press",
+        "reverseOnOff": true
+      }
+    ]
+}
+*/
 
 const switchbots = new Switchbots('switchbots')
 export default switchbots
