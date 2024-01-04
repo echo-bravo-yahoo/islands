@@ -6,7 +6,7 @@ import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
 import Switchbot from 'node-switchbot'
-import { updateReportedShadow } from '../shadow.js'
+import { updateWholeShadow } from '../shadow.js'
 
 export class Switchbots extends Module {
   constructor(stateKey) {
@@ -16,81 +16,64 @@ export class Switchbots extends Module {
     this.paths = {
       'enabled': { handler: this.handleEnabled, order: 0 }
     }
+    this.bleInfo = {}
+    this.isScanning = false
   }
 
-  invertUpDown(stateString) {
-    if (stateString === 'up') {
+  getStateById(id, state=this.currentState.switchbots) {
+    return state.find((bot) => bot.id === id)
+  }
+
+  toUpDown(on, invert) {
+    let off = !on
+
+    if ((on && !invert) || (off && invert)) {
       return 'down'
-    } else if (stateString === 'down') {
+    } else if ((off && !invert) || (on && invert)) {
       return 'up'
     }
   }
 
-  upDownToBoolean(stateString, bot) {
-    let res = stateString === 'up' ? true : false
-    return bot.state.reverseOnOff ? !res : res
-  }
-
-  invert(stateString) {
-    if (stateString === 'on') {
-      return 'off'
-    } else if (stateString === 'off') {
-      return 'on'
-    }
-  }
-
-  botToOnOff(bot) {
-    return bot.state.on ? 'on' : 'off'
-  }
-
-  botToUpDown(bot, desiredState=bot.state.on) {
-    if ((desiredState && !bot.state.reverseOnOff) || (!desiredState && bot.state.reverseOnOff)) {
-      return 'down'
-    } else if ((!desiredState && !bot.state.reverseOnOff) || (desiredState && bot.state.reverseOnOff)) {
-      return 'up'
-    }
-  }
-
-  botToStateString(bot, invert=false) {
-    if (invert) {
-      return `${this.invert(this.botToOnOff(bot))} (${this.invert(this.botToUpDown(bot))})`
-    } else {
-      return `${this.botToOnOff(bot)} (${this.botToUpDown(bot)})`
-    }
-  }
-
-  botToNameString(bot) {
-    return `${bot.state.name} (${bot.ble.id})`
+  botToNameString(botOrId) {
+    const bot = (typeof botOrId === 'string' ? this.getStateById(botOrId) : botOrId)
+    return `${bot.name} (${bot.id})`
   }
 
   // this function is used when the island first comes up
-  async correctBotState(bot) {
-    console.error(bot)
-    if (bot.ble.state !== bot.state.on) {
-      this.setBotState(bot, this.botToUpDown(bot))
+  // bluetooth: current
+  // state: desired
+  async correctBotState(botId) {
+    const bot = this.getStateById(botId),
+      current = this.bleInfo[botId].ble.on,
+      desired = bot.on
+
+    if (current !== desired) {
+      await this.setBotState(this.getStateById(botId), current)
     } else {
       this.debug({}, `No action necessary for switchbot ${botToNameString(bot)}.`)
     }
   }
 
-  findBotInState(id) {
-    const index = this.currentState.switchbots.findIndex((botToFind) => {
+  findBotIndex(id) {
+    return this.currentState.switchbots.findIndex((botToFind) => {
       return botToFind.id === id
     })
-
-    return [this.currentState.switchbots[index], index]
   }
 
   // this function is used when the island receives mqtt messages on onTopic or offTopic
   // desiredState is a boolean here
   async mutateBotState(bot, desiredState) {
-    const [state, index] = this.findBotInState(bot.state.id)
-    this.info(`Received MQTT request to change bot ${bot.state.id} from state ${state.on} (${this.botToUpDown(bot)}) to state ${desiredState} (${this.botToUpDown(bot, desiredState)}).`)
+    const index = this.findBotIndex(bot.id)
+    this.info(`Received MQTT request to change bot ${bot.id} (with index ${index}) from state ${bot.on} (${this.toUpDown(bot.on, bot.reverseOnOff)}) to state ${desiredState} (${this.toUpDown(desiredState, bot.reverseOnOff)}).`)
     // TODO: this is really broken and always believes that state.on is true
     // so let's bypass if for now and always attempt to set the switchbot state
     // if (state.on !== desiredState) {
-      await this.setBotState(bot, this.botToUpDown(bot, desiredState), desiredState)
-      updateReportedShadow(set({}, `modules[${this.stateKey}].switchbots[${index}].on`, desiredState))
+    await this.setBotState(bot, bot.on, desiredState)
+    this.info({}, `Updating shadow for index ${index} to ${desiredState}.`)
+    let reported = set({}, `modules[${this.stateKey}].switchbots]`, this.currentState.switchbots)
+    // TODO: this isn't quite right - it should use a sparse document instead of copying the whole document. Subtle bugs...
+    reported = set(reported, `modules[${this.stateKey}].switchbots[${index}].on`, desiredState)
+    updateWholeShadow({ reported: reported, desired: reported })
     // } else {
       // this.debug({}, `No action necessary for switchbot ${this.botToNameString(bot)}.`)
     // }
@@ -98,116 +81,143 @@ export class Switchbots extends Module {
 
   async pressBot(bot) {
     this.info(`Received MQTT request to press button.`)
-    await bot.ble.press()
+    await this.bleInfo[bot.id].ble.press()
     this.debug(`Pressed button for bot ${this.botToNameString(bot)}.`)
   }
 
   // newState is "up" or "down" by this point
-  async setBotState(bot, newState, booleanDesiredState) {
-    // console.log('bot', bot)
-    this.debug({}, `Changing state from ${this.invertUpDown(newState)} (${bot.state.on}) to ${newState} (${booleanDesiredState}) for switchbot ${this.botToNameString(bot)}...`)
-    bot.ble[newState]().then(() => {
-      // bot.state.on = booleanDesiredState
-      if (this.findBotInState(bot.state.id)[0].state)
-        this.findBotInState(bot.state.id)[0].state.on = booleanDesiredState
-      this.debug({}, `Changed state from ${this.invertUpDown(newState)} (${bot.state.on}) to ${newState} (${booleanDesiredState}) for switchbot ${this.botToNameString(bot)}.`)
-    }).catch((error) => {
-      this.error(error, `Failed to change state from ${this.invertUpDown(newState)} (${bot.state.on}) to ${newState} (${booleanDesiredState}) for switchbot ${this.botToNameString(bot)}.`)
-    })
+  async setBotState(bot, current, desired=bot.on) {
+    this.debug({}, `Changing state from ${current ? 'on' : 'off'} (${this.toUpDown(current, bot.reverseOnOff)}) to ${desired ? 'on' : 'off'} (${this.toUpDown(desired, bot.reverseOnOff)}) for switchbot ${this.botToNameString(bot)}...`)
+    if (this.isScanning) throw new Error('Attempting to scan and send commands simultaneously.')
+
+    await this.bleInfo[bot.id].ble[this.toUpDown(desired, bot.reverseOnOff)]()
+
+    bot.on = desired
+
+    this.debug({}, `Changed state from ${current ? 'on' : 'off'} (${this.toUpDown(current, bot.reverseOnOff)}) to ${desired ? 'on' : 'off'} (${this.toUpDown(desired, bot.reverseOnOff)}) for switchbot ${this.botToNameString(bot)}.`)
   }
 
-  async enableBot(bot) {
-    const promises = []
+  async enableBot(botId) {
+    const promises = [],
+      bot = this.getStateById(botId),
+      nameString = this.botToNameString(botId)
 
-    this.correctBotState(await bot)
+    await this.correctBotState(botId)
 
-
-    if (bot.state.onTopic) {
-      this.debug(`Subscribing bot ${this.botToNameString(bot)} to ON notifications on mqtt topic ${bot.state.onTopic}...`)
+    if (bot.onTopic) {
+      this.debug(`Subscribing bot ${nameString} to ON notifications on mqtt topic ${bot.onTopic}...`)
       promises.push(
-        globals.connection.subscribe(bot.state.onTopic, mqtt.QoS.AtLeastOnce, this.mutateBotState.bind(this, bot, true))
-        .then(() => this.debug(`Subscribed bot ${this.botToNameString(bot)} to ON notifications on mqtt topic ${bot.state.onTopic}.`))
+        globals.connection.subscribe(bot.onTopic, mqtt.QoS.AtLeastOnce, this.mutateBotState.bind(this, bot, true))
+        .then(() => this.debug(`Subscribed bot ${nameString} to ON notifications on mqtt topic ${bot.onTopic}.`))
       )
     }
 
-    if (bot.state.offTopic) {
-      this.debug(`Subscribing bot ${this.botToNameString(bot)} to OFF notifications on mqtt topic ${bot.state.offTopic}...`)
+    if (bot.offTopic) {
+      this.debug(`Subscribing bot ${nameString} to OFF notifications on mqtt topic ${bot.offTopic}...`)
       promises.push(
-        globals.connection.subscribe(bot.state.offTopic, mqtt.QoS.AtLeastOnce, this.mutateBotState.bind(this, bot, false))
-        .then(() => this.debug(`Subscribed bot ${this.botToNameString(bot)} to OFF notifications on mqtt topic ${bot.state.offTopic}.`))
+        globals.connection.subscribe(bot.offTopic, mqtt.QoS.AtLeastOnce, this.mutateBotState.bind(this, bot, false))
+        .then(() => this.debug(`Subscribed bot ${nameString} to OFF notifications on mqtt topic ${bot.offTopic}.`))
       )
     }
 
-    if (bot.state.pressTopic) {
-      this.debug(`Subscribing bot ${this.botToNameString(bot)} to PRESS notifications on mqtt topic ${bot.state.pressTopic}...`)
+    if (bot.pressTopic) {
+      this.debug(`Subscribing bot ${nameString} to PRESS notifications on mqtt topic ${bot.pressTopic}...`)
       promises.push(
-        globals.connection.subscribe(bot.state.offTopic, mqtt.QoS.AtLeastOnce, this.pressBot.bind(this, bot))
-        .then(() => this.debug(`Subscribed bot ${this.botToNameString(bot)} to PRESS notifications on mqtt topic ${bot.state.pressTopic}.`))
+        globals.connection.subscribe(bot.pressTopic, mqtt.QoS.AtLeastOnce, this.pressBot.bind(this, bot))
+        .then(() => this.debug(`Subscribed bot ${nameString} to PRESS notifications on mqtt topic ${bot.pressTopic}.`))
       )
     }
 
     return Promise.all(promises)
   }
 
-  async enable(state) {
+  async scan() {
+    return new Promise(async (resolve, reject) => {
+      let idsToFind = this.currentState.switchbots.map((bot) => bot.id)
+      let found = {}
+      let timeoutHandle
+
+      this.switchbot.onadvertisement = (ad) => {
+        try {
+          if (idsToFind.includes(ad.id)) {
+            found[ad.id] = ad
+            set(this.bleInfo, `${ad.id}.ad`, ad)
+            idsToFind = idsToFind.filter((id) => id !== ad.id)
+            this.debug(`Found device with id ${ad.id}. Still need to find ${idsToFind.join(', ')}.`)
+          }
+
+          if (idsToFind.length === 0) {
+            this.debug(`All devices' ads received.`)
+            this.switchbot.stopScan()
+            this.switchbot.onadvertisement = undefined
+            this.isScanning = false
+            clearTimeout(timeoutHandle)
+            resolve(Object.values(found))
+          }
+
+        } catch (error) {
+          this.error(error)
+          reject(error)
+        }
+      }
+
+      // TODO: we're not using bot.serviceData.battery or bot.serviceData.mode
+      this.isScanning = true
+      await this.switchbot.startScan({ model: "H" })
+
+      timeoutHandle = setTimeout(() => {
+        this.switchbot.stopScan()
+        this.isScanning = false
+        this.switchbot.onadvertisement = () => {}
+        reject(new Error(`Only found ${Object.keys(found).length} / ${this.currentState.switchbots.length} switchbots.`))
+      }, 10 * 1000)
+
+    })
+  }
+
+  async discover() {
+    let idsToFind = this.currentState.switchbots.map((bot) => bot.id)
+    let found = {}
+    // TODO: Should this bail and not actually enable?
+    if (idsToFind > 0) {
+      const error = new Error(`Could not find all requested switchbots' advertisements.`)
+      this.error(error)
+      throw error
+    }
+
+    const bots = await this.switchbot.discover({ model: "H", duration: 5 * 1000 })
+    idsToFind = this.currentState.switchbots.map((bot) => bot.id)
+    found = {}
+
+    for(let i = 0; i < bots.length; i++) {
+      if (idsToFind.includes(bots[i].id)) {
+        found[bots[i].id] = { ...this.getStateById(bots[i].id), ble: bots[i] }
+        set(this.bleInfo, `${bots[i].id}.ble`, bots[i])
+        idsToFind = idsToFind.filter((id) => id !== bots[i].id)
+        this.debug({}, `Discovered bot with id ${bots[i].id}.`)
+      }
+    }
+
+    this.info({}, `Found these things: ${Object.keys(found)}.`)
+
+    return found
+  }
+
+  async startScan() {
+    await this.scan()
+    let found = await this.discover()
+
+    for (let i = 0; i < this.currentState.switchbots.length; i++) {
+      await this.enableBot(this.currentState.switchbots[i].id)
+    }
+
+    this.info({}, `Enabled switchbots module, controlling ${Object.keys(found).length} bots.`)
+  }
+
+  async enable() {
     this.switchbot = new Switchbot()
-
-    this.info({}, `Enabling switchbots module to control ${state.switchbots ? state.switchbots.length : 0} bots...`)
-    let bleFound
-    try {
-      bleFound = await this.switchbot.discover({ model: "H", duration: 5000 })
-    } catch (e) {
-      console.error(e)
-      this.error(e)
-      throw e
-    }
-
-    this.info({}, `Detected nearby switchbots with ids ${bleFound.map((bot) => bot.id)}.`)
-
-    this.info({}, `state.switchbots: ${JSON.stringify(state.switchbots, null, 2)}`)
-    if (state.switchbots) {
-      const botsToFind = state.switchbots
-      let matchingBotsFound = []
-      for(let i = 0; i < botsToFind.length; i++) {
-        this.info({}, `Looking for bot with index ${i} and id ${botsToFind[i].id}.`)
-        //TODO: we're not using bot.serviceData.battery or bot.serviceData.mode
-        matchingBotsFound.push(
-          this.switchbot.discover({ model: 'H', duration: 5000, quick: true, id: botsToFind[i].id })
-          .then((botFound) => {
-            this.debug({}, `Found bot with id ${botsToFind[i].id}.`)
-            return { ble: botFound[0], state: botsToFind[i] }
-          })
-          .catch((e) => {
-            this.error(e)
-            throw e
-          })
-        )
-      }
-
-      try {
-        matchingBotsFound = await Promise.all(matchingBotsFound)
-      } catch (e) {
-        this.error(e)
-      }
-
-      //TODO: Should this bail and not actually enable?
-      if (botsToFind.length !== matchingBotsFound.length) {
-        const err = new Error('Could not find all requested switchbots.')
-        this.error({ err }, 'Could not find all requested switchbots.')
-        this.debug({ role: 'blob', blob: { bleFound } }, 'All bluetooth devices:')
-      }
-
-      this.debug({ role: 'blob', blob: { /*bleFound,*/ matchingBotsFound, botsToFind } }, 'Bots found, to find:')
-
-      let promises = []
-      for(let i = 0; i < matchingBotsFound.length; i++) {
-        promises.push(this.enableBot(matchingBotsFound[i]))
-      }
-
-      await Promise.all(promises)
-
-      this.info({}, `Enabled switchbots module, controlling ${promises.length} bots.`)
-    }
+    this.info({}, `Enabling switchbots module to control ${this.currentState.switchbots ? this.currentState.switchbots.length : 0} bots...`)
+    await this.startScan()
   }
 
   async disable() {
