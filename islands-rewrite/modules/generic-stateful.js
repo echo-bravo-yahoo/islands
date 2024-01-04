@@ -92,6 +92,8 @@ export class Stateful {
 
     globals.logger.debug({ role: 'blob', tags: ['shadow'], state: { delta, desired, reported, currentState: this.currentState, merged }, path, shortPath }, 'Shadow state:')
 
+    if (desired && path === 'scripts') this.init(desired)
+
     if (this.currentState && this.currentState.enabled === undefined && desired && desired.enabled !== undefined) {
       globals.logger.info({ role: 'breadcrumb', tags: ['shadow'] }, `${shortPath} not yet enabled or disabled. Setting ${shortPath} to ${desired.enabled ? 'enabled' : 'disabled'} to match desired state.`)
       this.init(desired)

@@ -7,18 +7,21 @@ const config = require('./config.json')
 import { setupShadow, getInitialShadowState } from './shadow.js'
 import { buildConnection } from './mqtt.js'
 import { setupProcess } from './process.js'
+
 import bme280 from './modules/bme280.js'
 import bme680 from './modules/bme680.js'
 import switchbots from './modules/switchbots.js'
 import thermalPrinter from './modules/thermal-printer.js'
 import island from './modules/island.js'
+import scripts from './modules/scripts.js'
+
 import loggerFactory from 'pino'
 
 export const globals = {
   shadow: undefined,
   connection: undefined,
   modules: [ bme280, bme680, thermalPrinter, switchbots ],
-  configs: [ island ],
+  configs: [ island, scripts ],
   // TODO: figure out how to remove this without breaking initial bootstrapping
   name: config.name,
   logger: loggerFactory({ level: 'debug' })
