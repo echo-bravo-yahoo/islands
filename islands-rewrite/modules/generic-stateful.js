@@ -132,4 +132,5 @@ export class Stateful {
     set(this.currentState, path, get(newState, path))
   }
 
+  init() {}
 }

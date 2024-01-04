@@ -4,8 +4,6 @@ export class Island extends Config {
   constructor(stateKey) {
     super(stateKey)
   }
-
-  init() {}
 }
 
 const island = new Island('island')

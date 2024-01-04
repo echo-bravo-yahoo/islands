@@ -24,6 +24,9 @@ export const globals = {
   logger: loggerFactory({ level: 'debug' })
 }
 
+// set up error handling and exit codes
+setupProcess(process)
+
 globals.connection = buildConnection()
 await globals.connection.connect()
 
@@ -49,9 +52,6 @@ globals.modules.forEach((module) => {
 })
 await Promise.all(promises)
 globals.logger.info({ role: 'breadcrumb' }, 'Registration completed.')
-
-// set up error handling and exit codes
-setupProcess(process)
 
 // this non-resolved promise keeps the process running
 const shouldRun = new Promise(() => {})

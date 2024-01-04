@@ -2,11 +2,12 @@ import { mqtt } from 'aws-iot-device-sdk-v2'
 
 import set from 'lodash/set.js'
 
+import Switchbot from 'node-switchbot'
+
 import { globals } from '../index.js'
 import { Module } from './generic-module.js'
-
-import Switchbot from 'node-switchbot'
 import { updateWholeShadow } from '../shadow.js'
+
 
 export class Switchbots extends Module {
   constructor(stateKey) {
@@ -128,7 +129,7 @@ export class Switchbots extends Module {
       )
     }
 
-    return Promise.all(promises)
+    return Promise.all(promises).then(() => this.enabled)
   }
 
   async scan() {
