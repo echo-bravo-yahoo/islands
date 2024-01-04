@@ -20,7 +20,7 @@ export class Switchbots extends Module {
     this.isScanning = false
   }
 
-  getStateById(id, state=this.currentState.switchbots) {
+  getBot(id, state=this.currentState.switchbots) {
     return state.find((bot) => bot.id === id)
   }
 
@@ -35,7 +35,7 @@ export class Switchbots extends Module {
   }
 
   botToNameString(botOrId) {
-    const bot = (typeof botOrId === 'string' ? this.getStateById(botOrId) : botOrId)
+    const bot = (typeof botOrId === 'string' ? this.getBot(botOrId) : botOrId)
     return `${bot.name} (${bot.id})`
   }
 
@@ -43,12 +43,12 @@ export class Switchbots extends Module {
   // bluetooth: current
   // state: desired
   async correctBotState(botId) {
-    const bot = this.getStateById(botId),
+    const bot = this.getBot(botId),
       current = this.bleInfo[botId].ble.on,
       desired = bot.on
 
     if (current !== desired) {
-      await this.setBotState(this.getStateById(botId), current)
+      await this.setBotState(this.getBot(botId), current)
     } else {
       this.debug({}, `No action necessary for switchbot ${botToNameString(bot)}.`)
     }
@@ -99,7 +99,7 @@ export class Switchbots extends Module {
 
   async enableBot(botId) {
     const promises = [],
-      bot = this.getStateById(botId),
+      bot = this.getBot(botId),
       nameString = this.botToNameString(botId)
 
     await this.correctBotState(botId)
@@ -134,13 +134,11 @@ export class Switchbots extends Module {
   async scan() {
     return new Promise(async (resolve, reject) => {
       let idsToFind = this.currentState.switchbots.map((bot) => bot.id)
-      let found = {}
       let timeoutHandle
 
       this.switchbot.onadvertisement = (ad) => {
         try {
           if (idsToFind.includes(ad.id)) {
-            found[ad.id] = ad
             set(this.bleInfo, `${ad.id}.ad`, ad)
             idsToFind = idsToFind.filter((id) => id !== ad.id)
             this.debug(`Found device with id ${ad.id}. Still need to find ${idsToFind.join(', ')}.`)
@@ -152,7 +150,7 @@ export class Switchbots extends Module {
             this.switchbot.onadvertisement = undefined
             this.isScanning = false
             clearTimeout(timeoutHandle)
-            resolve(Object.values(found))
+            resolve()
           }
 
         } catch (error) {
@@ -169,7 +167,7 @@ export class Switchbots extends Module {
         this.switchbot.stopScan()
         this.isScanning = false
         this.switchbot.onadvertisement = () => {}
-        reject(new Error(`Only found ${Object.keys(found).length} / ${this.currentState.switchbots.length} switchbots.`))
+        reject(new Error(`Only found ${Object.keys(this.bleInfo).length} / ${this.currentState.switchbots.length} switchbots.`))
       }, 10 * 1000)
 
     })
@@ -177,41 +175,35 @@ export class Switchbots extends Module {
 
   async discover() {
     let idsToFind = this.currentState.switchbots.map((bot) => bot.id)
-    let found = {}
+    const bots = await this.switchbot.discover({ model: "H", duration: 2 * 1000 })
+
+    for(let i = 0; i < bots.length; i++) {
+      if (idsToFind.includes(bots[i].id)) {
+        set(this.bleInfo, `${bots[i].id}.ble`, bots[i])
+        idsToFind = idsToFind.filter((id) => id !== bots[i].id)
+        this.debug({}, `Discovered switchbot with id ${bots[i].id}.`)
+      }
+    }
+
     // TODO: Should this bail and not actually enable?
-    if (idsToFind > 0) {
-      const error = new Error(`Could not find all requested switchbots' advertisements.`)
+    if (idsToFind.length > 0) {
+      const error = new Error(`Could not discover all requested switchbots.`)
       this.error(error)
       throw error
     }
 
-    const bots = await this.switchbot.discover({ model: "H", duration: 5 * 1000 })
-    idsToFind = this.currentState.switchbots.map((bot) => bot.id)
-    found = {}
-
-    for(let i = 0; i < bots.length; i++) {
-      if (idsToFind.includes(bots[i].id)) {
-        found[bots[i].id] = { ...this.getStateById(bots[i].id), ble: bots[i] }
-        set(this.bleInfo, `${bots[i].id}.ble`, bots[i])
-        idsToFind = idsToFind.filter((id) => id !== bots[i].id)
-        this.debug({}, `Discovered bot with id ${bots[i].id}.`)
-      }
-    }
-
-    this.info({}, `Found these things: ${Object.keys(found)}.`)
-
-    return found
+    this.info({}, `All switchbots discovered.`)
   }
 
   async startScan() {
     await this.scan()
-    let found = await this.discover()
+    await this.discover()
 
     for (let i = 0; i < this.currentState.switchbots.length; i++) {
       await this.enableBot(this.currentState.switchbots[i].id)
     }
 
-    this.info({}, `Enabled switchbots module, controlling ${Object.keys(found).length} bots.`)
+    this.info({}, `Enabled switchbots module, controlling ${Object.keys(this.bleInfo).length} bots.`)
   }
 
   async enable() {
