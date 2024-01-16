@@ -67,6 +67,7 @@ export class Scripts extends Config {
     this.currentState = newState
     this.environment = this.determineEnvironment()
 
+    // TODO: init or enable?
     if (this.currentState.scriptTopic) {
       this.debug(`Subscribing to script run requests on topic ${this.currentState.scriptTopic}...`)
         await globals.connection.subscribe(this.currentState.scriptTopic, mqtt.QoS.AtLeastOnce, this.runScript.bind(this))

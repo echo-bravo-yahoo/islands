@@ -218,9 +218,6 @@ export class Switchbots extends Module {
     this.switchbot = undefined
     this.info({}, `Disabled switchbots.`)
   }
-
-  async register() {
-  }
 }
 
 /*
