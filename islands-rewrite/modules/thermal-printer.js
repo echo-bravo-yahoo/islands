@@ -98,9 +98,6 @@ export class ThermalPrinter extends Module {
     this.printer = undefined
     this.info({ role: 'breadcrumb' }, `Disabled thermal printer.`)
   }
-
-  async register() {
-  }
 }
 
 const thermalPrinter = new ThermalPrinter('thermalPrinter')

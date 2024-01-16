@@ -62,9 +62,6 @@ export class BME280 extends Sensor {
 
     this.info({ role: 'blob', blob: payload }, `Publishing new bme280 data to data/weather/${globals.configs[0].currentState.location || 'unknown'}: ${JSON.stringify(payload)}`)
   }
-
-  async register() {
-  }
 }
 
 /*

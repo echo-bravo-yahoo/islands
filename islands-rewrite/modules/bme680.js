@@ -68,10 +68,6 @@ export class BME680 extends Sensor {
     this.info({}, `Disabled bme680.`)
     this.currentState.enabled = false
   }
-
-  async register() {
-  }
-
 }
 
 const bme680 = new BME680('bme680')
