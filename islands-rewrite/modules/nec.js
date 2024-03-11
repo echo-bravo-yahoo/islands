@@ -2,7 +2,9 @@ import { mqtt } from 'aws-iot-device-sdk-v2'
 
 import { globals } from '../index.js'
 import { Infrared } from './infrared.js'
-import { transmitNECCommand } from '../../bitbang/index.js'
+import necPkg from '../../bitbang/nec.js'
+const { transmitNECCommand } = necPkg
+
 
 import pigpio from 'pigpio'
 const Gpio = pigpio.Gpio
@@ -10,11 +12,6 @@ const Gpio = pigpio.Gpio
 export class NEC extends Infrared {
   constructor(stateKey) {
     super(stateKey)
-
-    this.paths = {
-      'virtual': { handler: this.copyState, order: 0 },
-      'enabled': { handler: this.handleEnabled, order: 1 },
-    }
   }
 
   runCommand(topicName, _body) {
@@ -42,11 +39,7 @@ export class NEC extends Infrared {
       })
   }
 
-  async enable() {
-    if (!this.currentState.virtual) {
-      new Gpio(this.currentState.ledPin, { mode: Gpio.OUTPUT })
-    }
-
+  async enable(newState) {
     // TODO: init or enable?
     if (this.currentState.commandTopic) {
       this.debug(`Subscribing to NEC command requests on topic ${this.currentState.commandTopic}...`)
@@ -54,11 +47,13 @@ export class NEC extends Infrared {
       this.debug(`Subscribed to NEC command requests on topic ${this.currentState.scriptTopic}.`)
     }
 
+    super.enable(newState)
     this.info({}, `Enabled nec.`)
     this.currentState.enabled = true
   }
 
   async disable() {
+    super.disable()
     this.info({}, `Disabled nec.`)
     this.currentState.enabled = false
   }

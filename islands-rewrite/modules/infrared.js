@@ -1,9 +1,7 @@
-import { mqtt } from 'aws-iot-device-sdk-v2'
-
-import get from 'lodash/get.js'
-
-import { globals } from '../index.js'
 import { Module } from './generic-module.js'
+
+import pigpio from 'pigpio'
+const Gpio = pigpio.Gpio
 
 export class Infrared extends Module {
   constructor(stateKey) {
@@ -12,23 +10,53 @@ export class Infrared extends Module {
     this.paths = {
       'virtual': { handler: this.copyState, order: 0 },
       'enabled': { handler: this.handleEnabled, order: 1 },
+      'ledPin': { handler: this.handleLedPin, order: 2 },
+      'receiverPin': { handler: this.handleReceiverPin, order: 3 }
     }
   }
 
-  async enable() {
-    if (!this.currentState.virtual) {
-      this.sensor = await bme280Sensor.open({ i2cAddress: Number(this.currentState.i2cAddress) || 0x76 })
+  handleLedPin(newState) {
+    if (this.currentState.ledPin !== newState.ledPin) {
+      console.log(`Changing infrared LED from pin ${this.currentState.ledPin} to ${newState.ledPin}.`)
+      return this.enable(newState)
+    }
+  }
+
+  handleReceiverPin(newState) {
+    if (this.currentState.receiverPin !== newState.receiverPin) {
+      console.log(`Changing infrared receiver from pin ${this.currentState.receiverPin} to ${newState.receiverPin}.`)
+      return this.enable(newState)
+    }
+  }
+
+  async enable(newState) {
+    if (!newState.virtual) {
+      if (newState.ledPin) {
+        this.infraredLed = new Gpio(newState.ledPin, { mode: Gpio.OUTPUT })
+        this.currentState.ledPin = newState.ledPin
+        this.info({}, `Enabled infrared LED on pin ${newState.ledPin}.`)
+      }
+      if (newState.receiverPin) {
+        this.infraredReceiver = new Gpio(newState.receiverPin, { mode: Gpio.INPUT })
+        this.currentState.receiverPin = newState.receiverPin
+        this.info({}, `Enabled infrared receiver on pin ${newState.receiverPin}.`)
+      }
     }
 
-    this.setupPublisher()
-    this.info({}, `Enabled bme280.`)
     this.currentState.enabled = true
   }
 
   async disable() {
-    clearInterval(this.interval)
-    if (this.sensor) await this.sensor.close()
-    this.info({}, `Disabled bme280.`)
+    if (this.infraredLed) {
+      this.infraredLed = undefined
+      this.currentState.ledPin = undefined
+      this.info({}, `Disabled infrared LED.`)
+    }
+    if (this.infraredReceiver) {
+      this.infraredReceiver = undefined
+      this.currentState.receiverPin = undefined
+      this.info({}, `Disabled infrared receiver.`)
+    }
     this.currentState.enabled = false
   }
 }
