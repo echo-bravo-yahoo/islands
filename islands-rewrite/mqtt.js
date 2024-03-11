@@ -12,7 +12,7 @@ export function buildConnection() {
 
   config_builder.with_certificate_authority_from_path(undefined, config.awsCertFilePath)
   config_builder.with_clean_session(false)
-  config_builder.with_client_id(config.name)
+  config_builder.with_client_id(config.name + '2')
   config_builder.with_endpoint(config.endpoint)
   const clientConfig = config_builder.build()
   const client = new mqtt.MqttClient()
