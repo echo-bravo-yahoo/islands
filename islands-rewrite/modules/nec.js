@@ -28,14 +28,19 @@ export class NEC extends Infrared {
   }
 
   runNECCommand(body) {
-    this.info({}, `Received NEC command with address ${Number(body.address).toString(16)} (extended/complement ${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAddress).toString(16)}) and command ${Number(body.command).toString(16)} (extended/complement ${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAdress).toString(16)}).`)
+    this.info({}, `Received NEC command with address 0x${Number(body.address).toString(16)} (extended/complement 0x${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAddress).toString(16)}) and command 0x${Number(body.command).toString(16)} (extended/complement 0x${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAdress).toString(16)}).`)
 
     if (this.currentState.virtual) return
 
     transmitNECCommand(pigpio, body.address, body.command, body.extendedAddress, body.extendedCommand)
       .then((waveId) => {
         this.info(`Done transmitting wave ${waveId}.`)
+        try {
         pigpio.waveDelete(waveId)
+        } catch (error) {
+          console.log(error)
+          console.log(JSON.stringify(error))
+        }
       })
   }
 
