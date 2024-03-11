@@ -46,9 +46,9 @@ export class NEC extends Infrared {
 
   async enable(newState) {
     // TODO: init or enable?
-    if (this.currentState.commandTopic) {
+    if (newState.commandTopic && newState.commandTopic !== this.currentState.commandTopic) {
       this.debug(`Subscribing to NEC command requests on topic ${this.currentState.commandTopic}...`)
-        await globals.connection.subscribe(this.currentState.commandTopic, mqtt.QoS.AtLeastOnce, this.runCommand.bind(this))
+      await globals.connection.subscribe(this.currentState.commandTopic, mqtt.QoS.AtLeastOnce, this.runCommand.bind(this))
       this.debug(`Subscribed to NEC command requests on topic ${this.currentState.scriptTopic}.`)
     }
 
