@@ -1,6 +1,5 @@
 import get from 'lodash/get.js'
 
-import { globals } from '../index.js'
 import { Module } from './generic-module.js'
 
 export class Sensor extends Module {
@@ -29,5 +28,4 @@ export class Sensor extends Module {
   getReportingInterval() {
     return get(this.currentState, 'reporting.interval', 60*1000)
   }
-
 }

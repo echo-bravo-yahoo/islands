@@ -2,7 +2,9 @@ import { mqtt } from 'aws-iot-device-sdk-v2'
 
 import { globals } from '../index.js'
 import { Infrared } from './infrared.js'
-import { transmitNECCommand } from '../../bitbang/index.js'
+import necPkg from '../../bitbang/nec.js'
+const { transmitNECCommand } = necPkg
+
 
 import pigpio from 'pigpio'
 const Gpio = pigpio.Gpio
@@ -10,11 +12,6 @@ const Gpio = pigpio.Gpio
 export class NEC extends Infrared {
   constructor(stateKey) {
     super(stateKey)
-
-    this.paths = {
-      'virtual': { handler: this.copyState, order: 0 },
-      'enabled': { handler: this.handleEnabled, order: 1 },
-    }
   }
 
   runCommand(topicName, _body) {
@@ -31,34 +28,37 @@ export class NEC extends Infrared {
   }
 
   runNECCommand(body) {
-    this.info({}, `Received NEC command with address ${Number(body.address).toString(16)} (extended/complement ${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAddress).toString(16)}) and command ${Number(body.command).toString(16)} (extended/complement ${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAdress).toString(16)}).`)
+    this.info({}, `Received NEC command with address 0x${Number(body.address).toString(16)} (extended/complement 0x${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAddress).toString(16)}) and command 0x${Number(body.command).toString(16)} (extended/complement 0x${Number(body.extendedAddress ? body.extendedAddress : ~body.extendedAdress).toString(16)}).`)
 
     if (this.currentState.virtual) return
 
     transmitNECCommand(pigpio, body.address, body.command, body.extendedAddress, body.extendedCommand)
       .then((waveId) => {
         this.info(`Done transmitting wave ${waveId}.`)
+        try {
         pigpio.waveDelete(waveId)
+        } catch (error) {
+          console.log(error)
+          console.log(JSON.stringify(error))
+        }
       })
   }
 
-  async enable() {
-    if (!this.currentState.virtual) {
-      new Gpio(this.currentState.ledPin, { mode: Gpio.OUTPUT })
-    }
-
+  async enable(newState) {
     // TODO: init or enable?
     if (newState.commandTopic && (!this.currentState.enabled || newState.commandTopic !== this.currentState.commandTopic)) {
       this.debug(`Subscribing to NEC command requests on topic ${this.currentState.commandTopic}...`)
-        await globals.connection.subscribe(this.currentState.commandTopic, mqtt.QoS.AtLeastOnce, this.runCommand.bind(this))
+      await globals.connection.subscribe(this.currentState.commandTopic, mqtt.QoS.AtLeastOnce, this.runCommand.bind(this))
       this.debug(`Subscribed to NEC command requests on topic ${this.currentState.scriptTopic}.`)
     }
 
+    super.enable(newState)
     this.info({}, `Enabled nec.`)
     this.currentState.enabled = true
   }
 
   async disable() {
+    super.disable()
     this.info({}, `Disabled nec.`)
     this.currentState.enabled = false
   }

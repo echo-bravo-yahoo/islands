@@ -12,6 +12,8 @@ import bme280 from './modules/bme280.js'
 import bme680 from './modules/bme680.js'
 import switchbots from './modules/switchbots.js'
 import thermalPrinter from './modules/thermal-printer.js'
+import infrared from './modules/infrared.js'
+import nec from './modules/nec.js'
 import island from './modules/island.js'
 import scripts from './modules/scripts.js'
 
@@ -20,7 +22,7 @@ import loggerFactory from 'pino'
 export const globals = {
   shadow: undefined,
   connection: undefined,
-  modules: [ bme280, bme680, thermalPrinter, switchbots ],
+  modules: [ bme280, bme680, thermalPrinter, switchbots, infrared, nec ],
   configs: [ island, scripts ],
   // TODO: figure out how to remove this without breaking initial bootstrapping
   name: config.name,
@@ -51,7 +53,7 @@ commitNumber.stdout.on('data', (data) => {
 globals.logger.info({ role: 'breadcrumb' }, 'Registering modules...')
 const promises = []
 globals.modules.forEach((module) => {
-  promises.push(module.register())
+  if (module.register) promises.push(module.register())
 })
 await Promise.all(promises)
 globals.logger.info({ role: 'breadcrumb' }, 'Registration completed.')
