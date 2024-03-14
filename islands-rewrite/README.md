@@ -6,3 +6,7 @@ Confirmed to work on node 17
 ### Logging cookbook
 - Pretty logs: `node index.js | pino-pretty`
 - Pretty logs for only one tag (in this case, "shadow"): `node index.js | jq 'select(.tags | index( "shadow" ))' | pino-pretty`
+
+### Deploying to a raspi for development
+Problems with rsync: no watch daemon
+`rsync --recursive --exclude "**/node_modules/*" --exclude "**/.git/*" --exclude "**/config.json"  --exclude "**.png" --exclude "**.zip" --exclude "**.md" --exclude "**/package-lock.json" ~/workspace/islands/ vaxholm:/home/pi/islands --verbose`

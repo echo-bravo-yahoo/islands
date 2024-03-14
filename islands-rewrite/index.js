@@ -16,13 +16,14 @@ import infrared from './modules/infrared.js'
 import nec from './modules/nec.js'
 import island from './modules/island.js'
 import scripts from './modules/scripts.js'
+import mitsubishiAC from './modules/mitsubishi-ac.js'
 
 import loggerFactory from 'pino'
 
 export const globals = {
   shadow: undefined,
   connection: undefined,
-  modules: [ bme280, bme680, thermalPrinter, switchbots, infrared, nec ],
+  modules: [ bme280, bme680, thermalPrinter, switchbots, infrared, nec, mitsubishiAC ],
   configs: [ island, scripts ],
   // TODO: figure out how to remove this without breaking initial bootstrapping
   name: config.name,

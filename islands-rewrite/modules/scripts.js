@@ -1,8 +1,6 @@
 import { mqtt } from 'aws-iot-device-sdk-v2'
 
 import { execSync } from 'child_process'
-import fs from "fs"
-import os from "os"
 
 import { globals } from '../index.js'
 import { Config } from './generic-config.js'

@@ -63,8 +63,8 @@ export class Infrared extends Module {
 
 /*
 {
-  "enabled": true,
-  "pin": number
+  "enabled": boolean,
+  "ledPin": number
 }
 */
 
