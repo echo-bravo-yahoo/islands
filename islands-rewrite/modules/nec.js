@@ -57,6 +57,7 @@ export class NEC extends Infrared {
     this.currentState.enabled = true
   }
 
+  // TODO: unsubscribe from commandTopic
   async disable() {
     super.disable()
     this.info({}, `Disabled nec.`)
