@@ -34,13 +34,9 @@ export class Scripts extends Config {
     return matched[0]
   }
 
-  // args is a string or undefined by this point
+  // args is a string by this point
   substituteArgs(scriptText, args) {
-    if (scriptText.includes("ARGS")) {
-      return scriptText.replace("ARGS", args)
-    } else {
-      return scriptText
-    }
+    if (scriptText.includes("ARGS")) return scriptText.replace("ARGS", args)
   }
 
   runScript(topicName, _body) {
@@ -59,8 +55,7 @@ export class Scripts extends Config {
       throw error
     }
 
-    this.info(`Running script ${scriptName} against environment ${this.environment} with text ${this.currentState.scripts[scriptName][this.environment]} and args ${body.args}.`)
-
+    this.info(`Running script ${scriptName} against environment ${this.environment}.`)
     let scriptText = this.currentState.scripts[scriptName][this.environment]
     scriptText = this.substituteArgs(scriptText, body.args)
     const stdout = execSync(scriptText)
