@@ -9,4 +9,4 @@ Confirmed to work on node 17
 
 ### Deploying to a raspi for development
 Problems with rsync: no watch daemon
-`rsync --recursive --exclude "**/node_modules/*" --exclude "**/.git/*" --exclude "**/config.json" ~/workspace/islands/ vaxholm:/home/pi/islands --verbose`
+`rsync --recursive --exclude "**/node_modules/*" --exclude "**/.git/*" --exclude "**/config.json"  --exclude "**.png" --exclude "**.zip" --exclude "**.md" --exclude "**/package-lock.json" ~/workspace/islands/ vaxholm:/home/pi/islands --verbose`
