@@ -2,9 +2,8 @@ import { mqtt } from 'aws-iot-device-sdk-v2'
 
 import { globals } from '../index.js'
 import { Infrared } from './infrared.js'
-import necPkg from '../../bitbang/nec.js'
+import necPkg from '../../bitbang/adapters/nec.js'
 const { transmitNECCommand } = necPkg
-
 
 import pigpio from 'pigpio'
 const Gpio = pigpio.Gpio
@@ -32,7 +31,11 @@ export class NEC extends Infrared {
 
     if (this.currentState.virtual) return
 
-    transmitNECCommand(pigpio, body.address, body.command, body.extendedAddress, body.extendedCommand)
+    const address = typeof body.address === 'string' ? Number(body.address, 16) : body.address
+    const command = typeof body.command === 'string' ? Number(body.command, 16) : body.command
+    const extendedAddress = typeof body.extendedAddress === 'string' ? Number(body.extendedAddress, 16) : body.extendedAddress
+    const extendedCommand = typeof body.extendedCommand === 'string' ? Number(body.extendedCommand, 16) : body.extendedCommand
+    transmitNECCommand(pigpio, address, command, extendedAddress, extendedCommand)
       .then((waveId) => {
         this.info(`Done transmitting wave ${waveId}.`)
         try {
