@@ -5,6 +5,8 @@ import { execSync } from 'child_process'
 import { globals } from '../index.js'
 import { Config } from './generic-config.js'
 
+import * as fs from 'fs';
+import * as os from 'os';
 
 export class Scripts extends Config {
   constructor(stateKey) {
@@ -34,7 +36,11 @@ export class Scripts extends Config {
 
   // args is a string by this point
   substituteArgs(scriptText, args) {
-    if (scriptText.includes("ARGS")) return scriptText.replace("ARGS", args)
+    if (scriptText.includes("ARGS")) {
+      return scriptText.replace("ARGS", args)
+    } else {
+      return scriptText
+    }
   }
 
   runScript(topicName, _body) {
