@@ -6,7 +6,7 @@ const config = require('./config.json')
 
 import { setupShadow, getInitialShadowState } from './shadow.js'
 import { buildConnection } from './mqtt.js'
-import { setupProcess } from './process.js'
+import { setupProcess, setupHeartbeat } from './process.js'
 
 import bme280 from './modules/bme280.js'
 import bme680 from './modules/bme680.js'
@@ -32,6 +32,7 @@ export const globals = {
 
 // set up error handling and exit codes
 setupProcess(process)
+setupHeartbeat()
 
 globals.connection = buildConnection()
 await globals.connection.connect()

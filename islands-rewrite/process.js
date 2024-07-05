@@ -2,6 +2,7 @@ import { globals } from './index.js'
 
 // flag to determine if we should run cleanup code
 let dirty = true
+let heartbeatHandle
 
 // pino.flush(cb) never calls the cb function, and it appears to flush fine without it
 async function cleanUp() {
@@ -13,9 +14,18 @@ async function cleanUp() {
     }
     await Promise.all(promises)
 
+    clearInterval(heartbeatHandle)
+
     globals.logger.info({ role: 'breadcrumb' }, 'Disconnecting from AWS IoT as part of process cleanup...')
     await globals.connection.disconnect()
     globals.logger.info({ role: 'breadcrumb' }, 'Disconnected from AWS IoT as part of process cleanup.')
+  }
+}
+
+export function setupHeartbeat(interval=60000) {
+  if (!heartbeatHandle) {
+    heartbeatHandle = setInterval(() => {
+    }, interval)
   }
 }
 
