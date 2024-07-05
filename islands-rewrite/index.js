@@ -10,7 +10,7 @@ import { setupProcess, setupHeartbeat } from './process.js'
 
 import bme280 from './modules/bme280.js'
 import bme680 from './modules/bme680.js'
-import switchbots from './modules/switchbots.js'
+import switchbots from './modules/switchbots.js' // no virtual mode
 import thermalPrinter from './modules/thermal-printer.js' // no virtual mode
 import infrared from './modules/infrared.js'
 import nec from './modules/nec.js'
