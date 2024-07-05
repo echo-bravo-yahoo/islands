@@ -2,10 +2,10 @@ import { mqtt } from 'aws-iot-device-sdk-v2'
 
 import get from 'lodash/get.js'
 
-import bme280Sensor from 'bme280'
-
 import { globals } from '../index.js'
 import { Sensor } from './generic-sensor.js'
+
+let bme280Sensor
 
 export class BME280 extends Sensor {
   constructor(stateKey) {
@@ -20,6 +20,7 @@ export class BME280 extends Sensor {
 
   async enable() {
     if (!this.currentState.virtual) {
+      bme280Sensor = await import("bme280").bme280Sensor
       this.sensor = await bme280Sensor.open({ i2cAddress: Number(this.currentState.i2cAddress) || 0x76 })
     }
 

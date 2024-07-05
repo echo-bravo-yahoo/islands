@@ -5,7 +5,7 @@ import { globals } from '../index.js'
 import { Infrared } from './infrared.js'
 import { Mitsubishi } from '../../bitbang/classes/Mitsubishi.js'
 
-import pigpio from 'pigpio'
+let pigpio
 
 export class MitsubishiAC extends Infrared {
   constructor(stateKey) {
@@ -14,6 +14,7 @@ export class MitsubishiAC extends Infrared {
   }
 
   async enable(newState) {
+    let pigpio = import('pigpio').pigpio
 
     if (newState.commandTopic && (!this.currentState.enabled || newState.commandTopic !== this.currentState.commandTopic)) {
       this.debug(`Subscribing to NEC command requests on topic ${this.currentState.commandTopic}...`)

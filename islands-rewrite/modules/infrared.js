@@ -1,7 +1,6 @@
 import { Module } from './generic-module.js'
 
-import pigpio from 'pigpio'
-const Gpio = pigpio.Gpio
+let pigpio, Gpio
 
 export class Infrared extends Module {
   constructor(stateKey) {
@@ -31,6 +30,9 @@ export class Infrared extends Module {
 
   async enable(newState) {
     if (!newState.virtual) {
+      pigpio = import('pigpio').pigpio
+      Gpio = pigpio.Gpio
+
       if (newState.ledPin) {
         this.infraredLed = new Gpio(newState.ledPin, { mode: Gpio.OUTPUT })
         this.currentState.ledPin = newState.ledPin

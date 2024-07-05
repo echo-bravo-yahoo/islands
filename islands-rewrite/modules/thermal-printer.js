@@ -1,8 +1,5 @@
 import { mqtt } from 'aws-iot-device-sdk-v2'
 
-import { SerialPort } from 'serialport'
-import Printer from 'thermalprinter'
-
 import path from 'path'
 import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
@@ -11,6 +8,8 @@ const imagePath = __dirname + '/thermal-printer-images/nodebot.png'
 
 import { globals } from '../index.js'
 import { Module } from './generic-module.js'
+
+let SerialPort, Printer
 
 export class ThermalPrinter extends Module {
   constructor(stateKey) {
@@ -63,6 +62,9 @@ export class ThermalPrinter extends Module {
   async enable() {
     return new Promise((resolve, reject) => {
       this.log({}, `Enabling thermal printer...`)
+      SerialPort = import('serialport').SerialPort
+      Printer = import('thermalprinter').Printer
+
       this.enabled = true
 
       // TODO: Support checking paper status

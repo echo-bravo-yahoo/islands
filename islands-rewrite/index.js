@@ -11,12 +11,12 @@ import { setupProcess, setupHeartbeat } from './process.js'
 import bme280 from './modules/bme280.js'
 import bme680 from './modules/bme680.js'
 import switchbots from './modules/switchbots.js'
-import thermalPrinter from './modules/thermal-printer.js'
+import thermalPrinter from './modules/thermal-printer.js' // no virtual mode
 import infrared from './modules/infrared.js'
 import nec from './modules/nec.js'
 import island from './modules/island.js'
 import scripts from './modules/scripts.js'
-import mitsubishiAC from './modules/mitsubishi-ac.js'
+import mitsubishiAC from './modules/mitsubishi-ac.js' // no virtual mode
 
 import loggerFactory from 'pino'
 
