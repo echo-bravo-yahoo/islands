@@ -49,7 +49,7 @@ export class BME680 extends Sensor {
 
   async enable() {
     if (!this.currentState.virtual) {
-      Bme680 = await import('bme680-sensor').Bme680
+      Bme680 = (await import('bme680-sensor')).default.Bme680
       this.sensor = new Bme680(1, Number(this.currentState.i2cAddress) || 0x77)
       await this.sensor.initialize()
     }
