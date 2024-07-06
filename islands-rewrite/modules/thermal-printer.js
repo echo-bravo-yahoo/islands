@@ -16,6 +16,10 @@ export class ThermalPrinter extends Module {
     super(stateKey)
 
     this.lastReceived = 0
+
+    this.paths = {
+      'enabled': { handler: this.handleEnabled, order: 0 }
+    }
   }
 
   processLine(line) {
@@ -39,11 +43,11 @@ export class ThermalPrinter extends Module {
   }
 
   async handlePrintRequest(topic, request) {
-    this.log({}, `Handling thermal printer print request...`)
+    this.info({}, `Handling thermal printer print request...`)
     const payload = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(request)))
-    this.log({ role: 'blob', blob: payload }, `Print request:`)
+    this.info({ role: 'blob', blob: payload }, `Print request:`)
     if (payload.timestamp <= this.lastReceived) {
-      this.log({}, `Disregarding old message with timestamp ${payload.timestamp}, which is older than lastReceived of ${this.lastReceived}.`)
+      this.info({}, `Disregarding old message with timestamp ${payload.timestamp}, which is older than lastReceived of ${this.lastReceived}.`)
     } else {
       const message = payload.message
       this.lastReceived = payload.lastReceived
@@ -54,14 +58,14 @@ export class ThermalPrinter extends Module {
       }
       this.printer.printLine('\n\n\n')
       this.printer.print(() => {
-        this.log({}, `Handled thermal printer print request.`)
+        this.info({}, `Handled thermal printer print request.`)
       })
     }
   }
 
   async enable() {
     return new Promise((resolve, reject) => {
-      this.log({}, `Enabling thermal printer...`)
+      this.info({}, `Enabling thermal printer...`)
       SerialPort = import('serialport').SerialPort
       Printer = import('thermalprinter').Printer
 
@@ -69,16 +73,16 @@ export class ThermalPrinter extends Module {
 
       // TODO: Support checking paper status
       // TODO: Consider printing QR codes or arbitrary images
-      this.log({}, `Enabling thermal printer serial connection...`)
+      this.info({}, `Enabling thermal printer serial connection...`)
       const serialPort = new SerialPort({ path: '/dev/ttyS0', baudRate: 19200 })
       serialPort.on('open',function() {
         this.printer = new Printer(serialPort)
         this.printer.on('ready', async function() {
           const topic = `commands/printer/${globals.configs[0].currentState.location}`
-          this.log({}, `Enabled thermal printer serial connection.`)
-          this.log({}, `Enabling thermal printer mqtt subscription to topic ${topic}...`)
+          this.info({}, `Enabled thermal printer serial connection.`)
+          this.info({}, `Enabling thermal printer mqtt subscription to topic ${topic}...`)
           await globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, handlePrintRequest)
-          this.log({}, `Enabled thermal printer mqtt subscription to topic ${topic}.`)
+          this.info({}, `Enabled thermal printer mqtt subscription to topic ${topic}.`)
           resolve()
         }).on('error', function(error) {
           reject(error)
