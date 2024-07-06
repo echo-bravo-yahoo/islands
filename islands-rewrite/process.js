@@ -59,7 +59,8 @@ async function cleanUp() {
 
     // should implement real connection draining
     server.close()
-    server.closeAllConnections()
+    if (server.closeAllConnections)
+      server.closeAllConnections()
 
     let promises = []
     for (const module in globals.modules) {
