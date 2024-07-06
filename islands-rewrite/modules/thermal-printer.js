@@ -42,57 +42,73 @@ export class ThermalPrinter extends Module {
     }
   }
 
-  async handlePrintRequest(topic, request) {
-    this.info({}, `Handling thermal printer print request...`)
+  handlePrintRequest(topic, request) {
     const payload = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(request)))
-    this.info({ role: 'blob', blob: payload }, `Print request:`)
-    if (payload.timestamp <= this.lastReceived) {
-      this.info({}, `Disregarding old message with timestamp ${payload.timestamp}, which is older than lastReceived of ${this.lastReceived}.`)
-    } else {
-      const message = payload.message
-      this.lastReceived = payload.lastReceived
-      const lines = message.split('\n')
-      for(let i = 0; i < lines.length; i++) {
-        this.printer.reset()
-        processLine(lines[i], this.printer)
+    try {
+      this.info({}, `Handling thermal printer print request...`)
+      this.info({ role: 'blob', blob: payload }, `Print request:`)
+      if (payload.timestamp <= this.lastReceived) {
+        this.info({}, `Disregarding old message with timestamp ${payload.timestamp}, which is older than lastReceived of ${this.lastReceived}.`)
+      } else {
+        const message = payload.message
+        this.lastReceived = payload.lastReceived
+        const lines = message.split('\n')
+        for(let i = 0; i < lines.length; i++) {
+          this.printer.reset()
+          this.processLine(lines[i], this.printer)
+        }
+        this.printer.printLine('\n\n\n')
+        this.printer.print(() => {
+          this.info({}, `Handled thermal printer print request.`)
+        })
       }
-      this.printer.printLine('\n\n\n')
-      this.printer.print(() => {
-        this.info({}, `Handled thermal printer print request.`)
-      })
+    } catch (e) {
+      this.error(`Error handling print request:\n${JSON.stringify(payload)}\n\n${e}`)
     }
   }
 
-  async enable() {
+  async enable(newState) {
+    SerialPort = (await import('serialport')).SerialPort
+    Printer = (await import('thermalprinter')).default
+
+    if (this.printer) {
+      this.info({}, `Thermal printer already subscribed to topic ${topic}.`)
+      return
+    }
+
+    this.info({}, `Enabling thermal printer...`)
+
     return new Promise((resolve, reject) => {
-      this.info({}, `Enabling thermal printer...`)
-      SerialPort = import('serialport').SerialPort
-      Printer = import('thermalprinter').Printer
-
-      this.enabled = true
-
       // TODO: Support checking paper status
       // TODO: Consider printing QR codes or arbitrary images
       this.info({}, `Enabling thermal printer serial connection...`)
-      const serialPort = new SerialPort({ path: '/dev/ttyS0', baudRate: 19200 })
-      serialPort.on('open',function() {
-        this.printer = new Printer(serialPort)
-        this.printer.on('ready', async function() {
+      this.serialPort = new SerialPort({ path: '/dev/ttyS0', baudRate: 19200 })
+
+      this.serialPort.on('open', () => {
+        this.printer = new Printer(this.serialPort, { heatingTime: 240, heatingInterval: 160, commandDelay: 120, chineseFirmware: true })
+
+        this.printer.on('ready', async () => {
           const topic = `commands/printer/${globals.configs[0].currentState.location}`
           this.info({}, `Enabled thermal printer serial connection.`)
           this.info({}, `Enabling thermal printer mqtt subscription to topic ${topic}...`)
-          await globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, handlePrintRequest)
+          await globals.connection.subscribe(topic, mqtt.QoS.AtLeastOnce, this.handlePrintRequest.bind(this))
           this.info({}, `Enabled thermal printer mqtt subscription to topic ${topic}.`)
+          this.currentState.enabled = true
+          this.info({}, `Enabled thermal printer.`)
           resolve()
-        }).on('error', function(error) {
-          reject(error)
-          this.error(error)
         })
-      }).on('error', function(error) {
-        reject(error)
+
+        this.printer.on('error', (error) => {
+          this.error(error)
+          reject(error)
+        })
+      })
+
+      this.serialPort.on('error', (error) => {
         this.error(error)
-      }).on('close', function(close) {
-        reject(error)
+      })
+
+      this.serialPort.on('close', (close) => {
         this.error(close)
       })
     })
@@ -100,9 +116,14 @@ export class ThermalPrinter extends Module {
 
   async disable() {
     this.info({ role: 'breadcrumb' }, `Disabling thermal printer...`)
-    this.enabled = false
+    this.currentState.enabled = false
     this.printer = undefined
+    this.serialPort.close()
     this.info({ role: 'breadcrumb' }, `Disabled thermal printer.`)
+  }
+
+  async cleanUp() {
+    this.serialPort.close()
   }
 }
 

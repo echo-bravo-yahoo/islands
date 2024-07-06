@@ -8,7 +8,6 @@ export class Module extends Stateful {
   constructor(stateKey) {
     super(stateKey)
 
-    this.enabled = undefined
     this.paths = {}
   }
 
