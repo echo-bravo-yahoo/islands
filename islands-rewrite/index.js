@@ -3,6 +3,7 @@ import { spawn } from 'child_process'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const config = require('./config.json')
+const packageJson = require('./package.json')
 
 import { setupShadow, getInitialShadowState } from './shadow.js'
 import { buildConnection } from './mqtt.js'
@@ -27,6 +28,7 @@ export const globals = {
   configs: [ island, scripts ],
   // TODO: figure out how to remove this without breaking initial bootstrapping
   name: config.name,
+  version: packageJson.version,
   logger: loggerFactory({ level: 'debug' })
 }
 
