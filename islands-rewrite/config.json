@@ -1,9 +1,9 @@
 {
-  "name": "",
-  "certId": "",
-  "certFilePath": "",
-  "privateKeyFilePath": "",
-  "awsCertFilePath": "",
-  "endpoint": "",
-  "publicKeyFilePath": ""
+  "name": "desktop",
+  "certId": "c09186c673cc532f7406f8bf04612c3a21b56c8e3cb58589f567d09ae89557c7",
+  "certFilePath": "/home/swift/.ssh/islands/desktop-certificate.pem.crt",
+  "privateKeyFilePath": "/home/swift/.ssh/islands/desktop-private.pem.key",
+  "awsCertFilePath": "/home/swift/.ssh/islands/AmazonRootCA1.pem",
+  "endpoint": "ayecs2a13r9pv-ats.iot.us-west-2.amazonaws.com",
+  "publicKeyFilePath": "/home/swift/.ssh/islands/desktop-public.pem.key"
 }
