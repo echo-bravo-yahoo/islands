@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "cd ..; sudo docker build . -t islands -f ./islands-rewrite/Dockerfile; cd islands-rewrite",
     "sync": "lsyncd config.lua",
     "start": "pm2 start index.js"
   },
@@ -18,6 +19,7 @@
     "bme680-sensor": "^1.1.0",
     "lodash": "^4.17.21",
     "node-switchbot": "^1.9.1",
+    "nodemon": "^3.1.9",
     "pigpio": "^3.3.1",
     "pino": "^8.5.0",
     "pino-pretty": "^9.1.0",
