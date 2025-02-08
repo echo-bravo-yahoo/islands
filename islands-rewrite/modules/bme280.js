@@ -7,12 +7,14 @@ import { Sensor } from "./generic-sensor.js";
 
 let bme280Sensor;
 
-function ctof(degreesC) {
-  return (9 / 5) * degreesC + 32;
+function ctof(degreesC, absolute = true) {
+  let offset = absolute ? 32 : 0;
+  return (9 / 5) * degreesC + offset;
 }
 
-function ftoc(degreesF) {
-  return (degreesF - 32) * (5 / 9);
+function ftoc(degreesF, absolute = true) {
+  let offset = absolute ? 32 : 0;
+  return (5 / 9) * (degreesF - offset);
 }
 
 export class BME280 extends Sensor {
@@ -66,14 +68,15 @@ export class BME280 extends Sensor {
     }
 
     const sensorData = await this.sensor.read();
+    const offset = this.currentState.offsets.temp
+      ? this.currentState.offsets.temp
+      : 0;
     const payload = {
       metadata: {
         island: globals.configs[0].currentState.name,
         timestamp: new Date(),
       },
-      temp:
-        ctof(sensorData.temperature) +
-        get(this.currentState, "offsets.temp", 0),
+      temp: ctof(sensorData.temperature) + offset,
       humidity:
         sensorData.humidity + get(this.currentState, "offsets.humidity", 0),
       pressure:
@@ -91,14 +94,19 @@ export class BME280 extends Sensor {
     if (this.currentState.remoteSensor) {
       // cmnd/destination/HVACRemoteTemp degreesC
       // HVACRemoteTemp
-      const adjustedTempInC =
-        sensorData.temperature +
-        get(ftoc(this.currentState), "offsets.temp", 0);
-      const sensorPayload = String(Math.round(adjustedTempInC / 2) * 2);
+      const offset = this.currentState.offsets.temp
+        ? ftoc(this.currentState.offsets.temp, false)
+        : 0;
+      const adjustedTempInC = sensorData.temperature + offset;
+      const sensorPayload = Math.round(adjustedTempInC / 2) * 2;
       globals.connection.publish(
         this.currentState.remoteSensor.topic,
-        sensorPayload,
+        JSON.stringify(sensorPayload),
         mqtt.QoS.AtLeastOnce
+      );
+      this.info(
+        { role: "blob", blob: payload },
+        `Publishing new bme280 remote sensor data to ${this.currentState.remoteSensor.topic}: ${sensorPayload}`
       );
     }
 
