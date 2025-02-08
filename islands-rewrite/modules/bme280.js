@@ -28,7 +28,7 @@ export class BME280 extends Sensor {
 
   async enable() {
     if (!this.currentState.virtual) {
-      bme280Sensor = await import("bme280").bme280Sensor;
+      bme280Sensor = await import("bme280");
       this.sensor = await bme280Sensor.open({
         i2cAddress: Number(this.currentState.i2cAddress) || 0x76,
       });
