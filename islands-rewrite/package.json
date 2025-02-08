@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cd ..; sudo docker build . -t islands -f ./islands-rewrite/Dockerfile; cd islands-rewrite",
     "sync": "lsyncd config.lua",
-    "start": "pm2 start index.js"
+    "start": "nodemon index.js"
   },
   "engines": "~17.9.0",
   "author": "",
@@ -23,8 +23,6 @@
     "pigpio": "^3.3.1",
     "pino": "^8.5.0",
     "pino-pretty": "^9.1.0",
-    "pm2": "^5.2.0",
-    "prom-client": "^15.1.3",
     "serialport": "^10.4.0",
     "thermalprinter": "^0.3.10"
   }
