@@ -4,18 +4,9 @@ import get from "lodash/get.js";
 
 import { globals } from "../index.js";
 import { Sensor } from "./generic-sensor.js";
+import { Temp } from "../util/temp.js";
 
 let bme280Sensor;
-
-function ctof(degreesC, absolute = true) {
-  let offset = absolute ? 32 : 0;
-  return (9 / 5) * degreesC + offset;
-}
-
-function ftoc(degreesF, absolute = true) {
-  let offset = absolute ? 32 : 0;
-  return (5 / 9) * (degreesF - offset);
-}
 
 export class BME280 extends Sensor {
   constructor(stateKey) {
@@ -68,15 +59,15 @@ export class BME280 extends Sensor {
     }
 
     const sensorData = await this.sensor.read();
-    const offset = this.currentState.offsets.temp
-      ? this.currentState.offsets.temp
-      : 0;
     const payload = {
       metadata: {
         island: globals.configs[0].currentState.name,
         timestamp: new Date(),
       },
-      temp: ctof(sensorData.temperature) + offset,
+      temp: new Temp(sensorData.temperature, "c")
+        .to("f")
+        .add(get(this.currentState, "offsets.temp", 0), "f")
+        .value({ precision: 2 }),
       humidity:
         sensorData.humidity + get(this.currentState, "offsets.humidity", 0),
       pressure:
@@ -93,12 +84,13 @@ export class BME280 extends Sensor {
 
     if (this.currentState.remoteSensor) {
       // cmnd/destination/HVACRemoteTemp degreesC
-      // HVACRemoteTemp
-      const offset = this.currentState.offsets.temp
-        ? ftoc(this.currentState.offsets.temp, false)
-        : 0;
-      const adjustedTempInC = sensorData.temperature + offset;
-      const sensorPayload = Math.round(adjustedTempInC / 2) * 2;
+      // HVACRemoteTemp 22
+      // HVACRemoteTempClearTime 300000
+
+      const sensorPayload = new Temp(sensorData.temperature, "c")
+        .add(get(this.currentState, "offsets.temp", 0), "f")
+        .value({ precision: 1, stepSize: 0.5 });
+
       globals.connection.publish(
         this.currentState.remoteSensor.topic,
         JSON.stringify(sensorPayload),
