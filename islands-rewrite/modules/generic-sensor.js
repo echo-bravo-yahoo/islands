@@ -63,7 +63,7 @@ export class Sensor extends Module {
   async handleSampling(newState) {
     this.info(
       {},
-      `Updating sampling interval from ${this.getSamplingInterval()} to ${newState.reporting.interval}.`
+      `Updating sampling interval from ${this.getSamplingInterval()} to ${newState.sampling.interval}.`
     );
     this.currentState.sampling = newState.sampling;
 
