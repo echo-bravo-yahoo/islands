@@ -15,7 +15,8 @@ export class BME280 extends Sensor {
     this.paths = {
       virtual: { handler: this.copyState, order: 0 },
       enabled: { handler: this.handleEnabled, order: 1 },
-      reporting: { handler: this.handleReporting, order: 2 },
+      sampling: { handler: this.handleSampling, order: 2 },
+      reporting: { handler: this.handleReporting, order: 3 },
     };
   }
 
