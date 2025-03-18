@@ -6,7 +6,7 @@ export class Temp {
     return this;
   }
 
-  static userUnitToInternalUnit(userUnit) {
+  static userUnitToInternalUnit(userUnit = this.unit) {
     if (["celsius", "c"].includes(userUnit.toLowerCase())) return "c";
     if (["fahrenheit", "f"].includes(userUnit.toLowerCase())) return "f";
     throw new Error(
