@@ -1,6 +1,5 @@
 import get from "lodash/get.js";
 import map from "lodash/map.js";
-import pick from "lodash/pick.js";
 
 import { Module } from "./generic-module.js";
 
@@ -21,7 +20,7 @@ export class Sensor extends Module {
       `Starting aggregation with path "${path}" and samples: ${JSON.stringify(this.samples)}.`
     );
     const result = this.doAggregation(
-      map(this.samples, (sample) => pick(sample, path))
+      map(this.samples, (sample) => get(sample, path))
     );
     this.info(
       {},
@@ -33,11 +32,10 @@ export class Sensor extends Module {
 
   // array of numbers => single datapoint
   doAggregation(data) {
-    // const aggregation =
-    //   data.length === 1
-    //     ? "latest"
-    //     : get(this.currentState, "sampling.aggregation");
-    const aggregation = "latest";
+    const aggregation =
+      data.length === 1
+        ? "latest"
+        : get(this.currentState, "sampling.aggregation");
 
     if (aggregation === "average") {
       return data.reduce((sum, next) => sum + next, 0) / data.length;
