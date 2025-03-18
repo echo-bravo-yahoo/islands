@@ -15,16 +15,8 @@ export class Sensor extends Module {
 
   // path => single datapoint
   aggregateMeasurement(path) {
-    this.info(
-      {},
-      `Starting aggregation with path "${path}" and samples: ${JSON.stringify(this.samples)}.`
-    );
     const result = this.doAggregation(
       map(this.samples, (sample) => get(sample, path))
-    );
-    this.info(
-      {},
-      `Ending aggregation for path "${path}" and samples: ${JSON.stringify(this.samples)} with value ${JSON.stringify(result)}.`
     );
 
     return result;

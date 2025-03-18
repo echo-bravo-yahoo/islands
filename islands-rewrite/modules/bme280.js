@@ -135,7 +135,6 @@ export class BME280 extends Sensor {
       // HVACRemoteTempClearTime 300000
 
       const sensorPayload = new Temp(payload.temp, "f")
-        .add(get(this.currentState, "offsets.temp", 0), "f")
         .to("c")
         .value({ precision: 1, stepSize: 0.5 });
 
