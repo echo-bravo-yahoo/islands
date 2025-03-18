@@ -29,7 +29,9 @@ export class Sensor extends Module {
     } else if (aggregation === "latest") {
       return data.pop();
     } else {
-      throw new Error(`Unsupported aggregation "${aggregation}".`);
+      throw new Error(
+        `Unsupported aggregation "${aggregation} for ${data.length} datapoints: ${JSON.stringify(data)}".`
+      );
     }
   }
 
