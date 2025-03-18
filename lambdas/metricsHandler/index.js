@@ -24,7 +24,7 @@ export async function handler(event, context, callback) {
   console.log(`event: ${JSON.stringify(event, null, 2)}`)
 
   await Promise.all([
-    logToCloudwatch(event),
+    // logToCloudwatch(event),
     logToInflux(event),
   ])
 }
