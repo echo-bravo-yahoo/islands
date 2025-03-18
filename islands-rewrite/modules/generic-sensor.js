@@ -1,4 +1,6 @@
 import get from "lodash/get.js";
+import map from "lodash/map.js";
+import pick from "lodash/pick.js";
 
 import { Module } from "./generic-module.js";
 
@@ -14,7 +16,9 @@ export class Sensor extends Module {
 
   // path => single datapoint
   aggregateMeasurement(path) {
-    return doAggregation(map(this.samples, (sample) => pick(sample, path)));
+    return this.doAggregation(
+      map(this.samples, (sample) => pick(sample, path))
+    );
   }
 
   // array of numbers => single datapoint
