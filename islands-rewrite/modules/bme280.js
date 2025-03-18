@@ -45,7 +45,7 @@ export class BME280 extends Sensor {
         ? "latest"
         : get(this.currentState, "sampling.aggregation");
 
-    return {
+    const aggregated = {
       metadata: {
         // is this preferable? or is globals.name preferable?
         island: globals.configs[0].currentState.name,
@@ -70,6 +70,10 @@ export class BME280 extends Sensor {
         this.aggregateMeasurement("pressure.result") +
         get(this.currentState, "offsets.pressure", 0),
     };
+
+    this.samples = [];
+
+    return aggregated;
   }
 
   async sample() {
@@ -133,8 +137,9 @@ export class BME280 extends Sensor {
       // HVACRemoteTemp 22
       // HVACRemoteTempClearTime 300000
 
-      const sensorPayload = new Temp(sensorData.temperature, "c")
+      const sensorPayload = new Temp(payload.temp, "f")
         .add(get(this.currentState, "offsets.temp", 0), "f")
+        .to("c")
         .value({ precision: 1, stepSize: 0.5 });
 
       globals.connection.publish(
