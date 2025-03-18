@@ -40,7 +40,10 @@ export class BME280 extends Sensor {
   }
 
   aggregate() {
-    const aggregation = get(this.currentState, "sampling.aggregation");
+    const aggregation =
+      this.samples.length === 1
+        ? "latest"
+        : get(this.currentState, "sampling.aggregation");
 
     return {
       metadata: {
