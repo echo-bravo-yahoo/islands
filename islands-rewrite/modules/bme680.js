@@ -20,6 +20,8 @@ export class BME680 extends Sensor {
   }
 
   aggregate() {
+    const aggregation = get(this.currentState, "sampling.aggregation");
+
     return {
       // is this preferable? or is globals.configs[0].currentState.name preferable?
       metadata: { island: globals.name, timestamp: new Date() },

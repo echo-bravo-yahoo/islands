@@ -40,6 +40,8 @@ export class BME280 extends Sensor {
   }
 
   aggregate() {
+    const aggregation = get(this.currentState, "sampling.aggregation");
+
     return {
       metadata: {
         // is this preferable? or is globals.name preferable?
