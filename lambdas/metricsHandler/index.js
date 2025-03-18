@@ -34,7 +34,7 @@ async function logToInflux(event) {
     labels = []
 
   for (const [key, value] of Object.entries(event.readings)) {
-    if (key !== 'metadata') {
+    if (key !== 'metadata' && key !== 'aggregationMetadata') {
       data.push(`${key}=${value}`)
     }
   }
