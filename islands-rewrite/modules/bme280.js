@@ -39,42 +39,84 @@ export class BME280 extends Sensor {
     this.currentState.enabled = false;
   }
 
-  async publishReading() {
-    const virtualPayload = {
+  aggregate() {
+    return {
       metadata: {
+        // is this preferable? or is globals.name preferable?
         island: globals.configs[0].currentState.name,
         timestamp: new Date(),
       },
-      temp: 72 + get(this.currentState, "offsets.temp", 0),
-      humidity: 20 + get(this.currentState, "offsets.humidity", 0),
-      pressure: 1000 + get(this.currentState, "offsets.pressure", 0),
-    };
-
-    if (this.currentState.virtual) {
-      this.info(
-        { role: "blob", blob: virtualPayload },
-        `Publishing new bme280 data to data/weather/${globals.configs[0].currentState.location || "unknown"}: ${JSON.stringify(virtualPayload)}`
-      );
-      return;
-    }
-
-    const sensorData = await this.sensor.read();
-    const payload = {
-      metadata: {
-        island: globals.configs[0].currentState.name,
-        timestamp: new Date(),
+      aggregationMetadata: {
+        samples: this.samples.length,
+        aggregation,
+        offsets: {
+          temp: get(this.currentState, "offsets.temp", 0),
+          humidity: get(this.currentState, "offsets.humidity", 0),
+          pressure: get(this.currentState, "offsets.pressure", 0),
+        },
       },
-      temp: new Temp(sensorData.temperature, "c")
+      temp: new Temp(this.aggregateMeasurement("temp.result"))
         .to("f")
         .add(get(this.currentState, "offsets.temp", 0), "f")
         .value({ precision: 2 }),
       humidity:
-        sensorData.humidity + get(this.currentState, "offsets.humidity", 0),
+        this.aggregateMeasurement("humidity.result") +
+        get(this.currentState, "offsets.humidity", 0),
       pressure:
-        sensorData.pressure + get(this.currentState, "offsets.pressure", 0),
-      // TODO: is this worth implementing?
-      // altitude:
+        this.aggregateMeasurement("pressure.result") +
+        get(this.currentState, "offsets.pressure", 0),
     };
+  }
+
+  async sample() {
+    const sensorData = await this.sensor.read();
+
+    const datapoint = {
+      metadata: {
+        island: globals.configs[0].currentState.name,
+        timestamp: new Date(),
+      },
+      temp: {
+        raw: sensorData.temperature,
+        converted: new Temp(sensorData.temperature, "c").to("f").value(),
+        offset: get(this.currentState, "offsets.temp"),
+        result: new Temp(sensorData.temperature, "c")
+          .to("f")
+          .add(get(this.currentState, "offsets.temp", 0), "f")
+          .value(),
+      },
+      humidity: {
+        raw: sensorData.humidity,
+        offset: get(this.currentState, "offsets.humidity", 0),
+        result:
+          sensorData.humidity + get(this.currentState, "offsets.humidity", 0),
+      },
+      pressure: {
+        raw: sensorData.pressure,
+        offset: get(this.currentState, "offsets.pressure", 0),
+        result:
+          sensorData.pressure + get(this.currentState, "offsets.pressure", 0),
+      },
+    };
+
+    this.debug({}, `Sampled new data point`);
+    samples.push(datapoint);
+  }
+
+  async publishReading() {
+    if (get(this.currentState, "sampling") === undefined) {
+      await this.sample();
+    }
+
+    if (this.currentState.virtual) {
+      this.info(
+        { role: "blob", blob: this.generateVirtualPayload() },
+        `Publishing new bme280 data to data/weather/${globals.configs[0].currentState.location || "unknown"}: ${JSON.stringify(this.generateVirtualPayload())}`
+      );
+      return;
+    }
+
+    const payload = this.aggregate();
 
     globals.connection.publish(
       `data/weather/${globals.configs[0].currentState.location || "unknown"}`,
@@ -107,6 +149,18 @@ export class BME280 extends Sensor {
       `Publishing new bme280 data to data/weather/${globals.configs[0].currentState.location || "unknown"}: ${JSON.stringify(payload)}`
     );
   }
+
+  generateVirtualPayload() {
+    return {
+      metadata: {
+        island: globals.configs[0].currentState.name,
+        timestamp: new Date(),
+      },
+      temp: 72 + get(this.currentState, "offsets.temp", 0),
+      humidity: 20 + get(this.currentState, "offsets.humidity", 0),
+      pressure: 1000 + get(this.currentState, "offsets.pressure", 0),
+    };
+  }
 }
 
 /*
@@ -121,11 +175,11 @@ export class BME280 extends Sensor {
     "pressure": ""
   },
   "sampling": {
-    "interval": ""
-  },
-  "reporting": {
     "interval": "",
     "aggregation": "latest|average|median|pX"
+  },
+  "reporting": {
+    "interval": ""
   }
 }
 */
