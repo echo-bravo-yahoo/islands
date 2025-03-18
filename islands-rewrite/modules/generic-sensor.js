@@ -23,7 +23,11 @@ export class Sensor extends Module {
 
   // array of numbers => single datapoint
   doAggregation(data) {
-    const aggregation = get(this.currentState, "sampling.aggregation");
+    const aggregation =
+      this.samples.length === 1
+        ? "latest"
+        : get(this.currentState, "sampling.aggregation");
+
     if (aggregation === "average") {
       return data.reduce((sum, next) => sum + next, 0) / data.length;
     } else if (aggregation === "latest") {
