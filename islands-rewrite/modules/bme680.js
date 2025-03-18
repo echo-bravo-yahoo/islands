@@ -87,7 +87,7 @@ export class BME680 extends Sensor {
     };
 
     this.debug({}, `Sampled new data point`);
-    samples.push(datapoint);
+    this.samples.push(datapoint);
   }
 
   async publishReading() {
