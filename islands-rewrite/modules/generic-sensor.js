@@ -24,7 +24,7 @@ export class Sensor extends Module {
   // array of numbers => single datapoint
   doAggregation(data) {
     const aggregation =
-      this.samples.length === 1
+      data.length === 1
         ? "latest"
         : get(this.currentState, "sampling.aggregation");
 
