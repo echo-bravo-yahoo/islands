@@ -23,10 +23,11 @@ export class Sensor extends Module {
 
   // array of numbers => single datapoint
   doAggregation(data) {
-    const aggregation =
-      data.length === 1
-        ? "latest"
-        : get(this.currentState, "sampling.aggregation");
+    // const aggregation =
+    //   data.length === 1
+    //     ? "latest"
+    //     : get(this.currentState, "sampling.aggregation");
+    const aggregation = "latest";
 
     if (aggregation === "average") {
       return data.reduce((sum, next) => sum + next, 0) / data.length;
@@ -34,7 +35,7 @@ export class Sensor extends Module {
       return data.pop();
     } else {
       throw new Error(
-        `Unsupported aggregation "${aggregation} for ${data.length} datapoints: ${JSON.stringify(data)}".`
+        `Unsupported aggregation "${aggregation}" for ${data.length} datapoints: ${JSON.stringify(data)}".`
       );
     }
   }
