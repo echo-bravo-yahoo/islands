@@ -25,7 +25,7 @@ export class Sensor extends Module {
     );
     this.info(
       {},
-      `Ending aggregation for path "${path}" and samples: ${JSON.stringify(this.samples)} with value ${result}.`
+      `Ending aggregation for path "${path}" and samples: ${JSON.stringify(this.samples)} with value ${JSON.stringify(result)}.`
     );
 
     return result;
