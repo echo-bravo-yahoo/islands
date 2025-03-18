@@ -45,6 +45,7 @@ export class BME280 extends Sensor {
         ? "latest"
         : get(this.currentState, "sampling.aggregation");
 
+    this.info({ blob: this.samples }, `Aggregating.`);
     const aggregated = {
       metadata: {
         // is this preferable? or is globals.name preferable?
