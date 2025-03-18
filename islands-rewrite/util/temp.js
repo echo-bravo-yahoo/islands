@@ -1,6 +1,6 @@
 export class Temp {
   constructor(temp, unit, offset = true) {
-    this.unit = Temp.userUnitToInternalUnit(unit);
+    this.unit = this.userUnitToInternalUnit(unit);
     this.temp = temp;
     this.offset = !!offset;
     return this;
@@ -34,7 +34,7 @@ export class Temp {
   }
 
   to(desiredUnit) {
-    desiredUnit = Temp.userUnitToInternalUnit(desiredUnit);
+    desiredUnit = this.userUnitToInternalUnit(desiredUnit);
     if (desiredUnit === this.unit) return this;
 
     this.temp = Temp.atob(this.temp, desiredUnit, this.offset);
@@ -44,7 +44,7 @@ export class Temp {
   }
 
   add(temp, unit) {
-    unit = Temp.userUnitToInternalUnit(unit);
+    unit = this.userUnitToInternalUnit(unit);
     if (unit === this.unit) {
       this.temp += temp;
     } else {
