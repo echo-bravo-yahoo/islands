@@ -19,46 +19,103 @@ export class BME680 extends Sensor {
     };
   }
 
-  async publishReading() {
-    const virtualPayload = {
+  aggregate() {
+    const aggregation =
+      this.samples.length === 1
+        ? "latest"
+        : get(this.currentState, "sampling.aggregation");
+
+    return {
+      // is this preferable? or is globals.configs[0].currentState.name preferable?
+      metadata: { island: globals.name, timestamp: new Date() },
+      aggregationMetadata: {
+        samples: this.samples.length,
+        aggregation,
+        offsets: {
+          temp: get(this.currentState, "offsets.temp", 0),
+          humidity: get(this.currentState, "offsets.humidity", 0),
+          pressure: get(this.currentState, "offsets.pressure", 0),
+          gas: get(this.currentState, "offsets.gas", 0),
+        },
+      },
+      temp: new Temp(this.aggregateMeasurement("temp.result"))
+        .to("f")
+        .add(get(this.currentState, "offsets.temp", 0), "f")
+        .value({ precision: 2 }),
+      humidity:
+        this.aggregateMeasurement("humidity.result") +
+        get(this.currentState, "offsets.humidity", 0),
+      pressure:
+        this.aggregateMeasurement("pressure.result") +
+        get(this.currentState, "offsets.pressure", 0),
+      gas:
+        this.aggregateMeasurement("gas") +
+        get(this.currentState, "offsets.gas", 0),
+    };
+  }
+
+  async sample() {
+    const sensorData = await this.sensor.read();
+
+    const datapoint = {
       metadata: {
         island: globals.configs[0].currentState.name,
         timestamp: new Date(),
       },
-      temp: 72 + get(this.currentState, "offsets.temp", 0),
-      gas: 1000 + get(this.currentState, "offsets.gas", 0),
-      humidity: 20 + get(this.currentState, "offsets.humidity", 0),
-      pressure: 1000 + get(this.currentState, "offsets.pressure", 0),
+      temp: {
+        raw: sensorData.temperature,
+        converted: new Temp(sensorData.temperature, "c").to("f").value(),
+        offset: get(this.currentState, "offsets.temp"),
+        result: new Temp(sensorData.temperature, "c")
+          .to("f")
+          .add(get(this.currentState, "offsets.temp", 0), "f")
+          .value(),
+      },
+      humidity: {
+        raw: sensorData.humidity,
+        offset: get(this.currentState, "offsets.humidity", 0),
+        result:
+          sensorData.humidity + get(this.currentState, "offsets.humidity", 0),
+      },
+      pressure: {
+        raw: sensorData.pressure,
+        offset: get(this.currentState, "offsets.pressure", 0),
+        result:
+          sensorData.pressure + get(this.currentState, "offsets.pressure", 0),
+      },
+      gas: {
+        raw: sensorData.gas_resistance,
+        offset: get(this.currentState, "offsets.gas", 0),
+        result:
+          sensorData.gas_resistance + get(this.currentState, "offsets.gas", 0),
+      },
     };
+
+    this.debug({}, `Sampled new data point`);
+    this.samples.push(datapoint);
+  }
+
+  async publishReading() {
+    if (get(this.currentState, "sampling") === undefined) {
+      await this.sample();
+    }
 
     if (this.currentState.virtual) {
       this.info(
-        { role: "blob", blob: virtualPayload },
-        `Publishing new bme680 data to data/weather/${globals.configs[0].currentState.location || "unknown"}: ${JSON.stringify(virtualPayload)}`
+        { role: "blob", blob: this.generateVirtualPayload() },
+        `Publishing new bme680 data to data/weather/${globals.configs[0].currentState.location || "unknown"}: ${JSON.stringify(this.generateVirtualPayload())}`
       );
       return;
     }
 
-    const sensorData = (await this.sensor.getSensorData()).data;
-    const payload = {
-      metadata: { island: globals.name, timestamp: new Date() },
-      temp: new Temp(sensorData.temperature, "c")
-        .add(get(this.currentState, "offsets.temp", 0), "f")
-        .value({ precision: 2 }),
-      humidity:
-        sensorData.humidity + get(this.currentState, "offsets.humidity", 0),
-      pressure:
-        sensorData.pressure + get(this.currentState, "offsets.pressure", 0),
-      gas: sensorData.gas_resistance + get(this.currentState, "offsets.gas", 0),
-      // TODO: is this worth implementing?
-      // altitude:
-    };
+    const payload = this.aggregate();
 
     globals.connection.publish(
       `data/weather/${globals.configs[0].currentState.location || "unknown"}`,
       payload,
       mqtt.QoS.AtLeastOnce
     );
+
     this.info(
       { role: "blob", blob: payload },
       `Publishing new bme680 data to data/weather/${globals.configs[0].currentState.location || "unknown"}: ${JSON.stringify(payload)}`
@@ -85,6 +142,19 @@ export class BME680 extends Sensor {
     clearInterval(this.interval);
     this.info({}, `Disabled bme680.`);
     this.currentState.enabled = false;
+  }
+
+  generateVirtualPayload() {
+    return {
+      metadata: {
+        island: globals.configs[0].currentState.name,
+        timestamp: new Date(),
+      },
+      temp: 72 + get(this.currentState, "offsets.temp", 0),
+      gas: 1000 + get(this.currentState, "offsets.gas", 0),
+      humidity: 20 + get(this.currentState, "offsets.humidity", 0),
+      pressure: 1000 + get(this.currentState, "offsets.pressure", 0),
+    };
   }
 }
 

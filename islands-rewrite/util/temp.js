@@ -1,12 +1,16 @@
 export class Temp {
   constructor(temp, unit, offset = true) {
-    this.unit = Temp.userUnitToInternalUnit(unit);
+    if (unit === undefined)
+      throw new Error(
+        `Undefined unit (should be one of "c", "celsius", "f", "fahrenheit").`
+      );
+    this.unit = this.userUnitToInternalUnit(unit);
     this.temp = temp;
     this.offset = !!offset;
     return this;
   }
 
-  static userUnitToInternalUnit(userUnit) {
+  userUnitToInternalUnit(userUnit = this.unit) {
     if (["celsius", "c"].includes(userUnit.toLowerCase())) return "c";
     if (["fahrenheit", "f"].includes(userUnit.toLowerCase())) return "f";
     throw new Error(
@@ -34,7 +38,7 @@ export class Temp {
   }
 
   to(desiredUnit) {
-    desiredUnit = Temp.userUnitToInternalUnit(desiredUnit);
+    desiredUnit = this.userUnitToInternalUnit(desiredUnit);
     if (desiredUnit === this.unit) return this;
 
     this.temp = Temp.atob(this.temp, desiredUnit, this.offset);
@@ -44,7 +48,7 @@ export class Temp {
   }
 
   add(temp, unit) {
-    unit = Temp.userUnitToInternalUnit(unit);
+    unit = this.userUnitToInternalUnit(unit);
     if (unit === this.unit) {
       this.temp += temp;
     } else {
