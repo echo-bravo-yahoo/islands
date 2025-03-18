@@ -75,6 +75,7 @@ export class BME280 extends Sensor {
   }
 
   async sample() {
+    if (!this.currentState.enabled) return;
     const sensorData = await this.sensor.read();
 
     const datapoint = {
