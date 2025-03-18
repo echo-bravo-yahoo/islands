@@ -67,7 +67,7 @@ async function logToCloudwatch(event) {
   })
 
   for(let i = 0; i < Object.keys(event.readings).length; i++) {
-    if (Object.keys(event.readings)[i] !== 'metadata') {
+    if (Object.keys(event.readings)[i] !== 'metadata' && Object.keys(event.readings)[i] !== 'aggregationMetadata') {
       data.push({
         MetricName: Object.keys(event.readings)[i],
         Dimensions: dimensions,
