@@ -110,7 +110,10 @@ export class BME280 extends Sensor {
   }
 
   async publishReading() {
-    if (get(this.currentState, "sampling") === undefined) {
+    if (
+      get(this.currentState, "sampling") === undefined ||
+      this.samples.length === 0
+    ) {
       await this.sample();
     }
 
