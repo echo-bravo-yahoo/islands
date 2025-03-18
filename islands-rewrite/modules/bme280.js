@@ -65,8 +65,8 @@ export class BME280 extends Sensor {
       temp: new Temp(this.aggregateMeasurement("temp.result"), "f").value({
         precision: 2,
       }),
-      humidity: this.aggregateMeasurement("humidity.result"),
-      pressure: this.aggregateMeasurement("pressure.result"),
+      humidity: Number(this.aggregateMeasurement("humidity.result")).toFixed(2),
+      pressure: Number(this.aggregateMeasurement("pressure.result")).toFixed(2),
     };
 
     this.samples = [];
