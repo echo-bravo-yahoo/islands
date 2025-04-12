@@ -1,0 +1,8 @@
+{
+  "name": "vaxholm",
+  "mqttOptions": {
+    "username": "",
+    "password": "",
+    "endpoint": ""
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "location": "",
+  "name": "",
+  "bme280": {
+    "enabled": false,
+    "offsets": {
+      "temp": 0,
+      "humidity": 0,
+      "pressure": 0
+    },
+    "sampling": {
+      "interval": "",
+      "aggregation": "average"
+    },
+    "reporting": {
+      "interval": ""
+    },
+    "remoteSensor": {
+      "topic": ""
+    }
+  }
+}
