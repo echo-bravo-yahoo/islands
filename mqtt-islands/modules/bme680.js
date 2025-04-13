@@ -118,7 +118,7 @@ export class BME680 {
       JSON.stringify(payload)
     );
 
-    logWeatherToInflux(payload, { ...globals.configs[0].currentState, ...this.currentState });
+    logWeatherToInflux(payload, { ...globals.state, ...this.currentState });
 
     if (this.currentState.remoteSensor) {
       // cmnd/destination/HVACRemoteTemp degreesC
