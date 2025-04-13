@@ -33,7 +33,8 @@ export async function logWeatherToInflux(event, state) {
 
 async function logToInflux(measurementName, event, labels, state) {
   let data = [],
-    labels = []
+    labelsArray = [],
+    labelsString = ""
 
   for (const [key, value] of Object.entries(event.readings)) {
     if (key !== 'metadata' && key !== 'aggregationMetadata') {
@@ -41,15 +42,15 @@ async function logToInflux(measurementName, event, labels, state) {
     }
   }
 
-  for (const [labelKey, labelValue] of Object.entries(event.dimensions)) {
-    labels.push(`${labelKey}=${labelValue}`)
+  for (const [labelKey, labelValue] of Object.entries(labels)) {
+    labelsArray.push(`${labelKey}=${labelValue}`)
   }
 
-  labels = labels.join(',')
-  if (labels.length) labels = `,${labels}`
+  labelsString = labelsArray.join(',')
+  if (labelsString.length) labelsString = `,${labelsString}`
   data = data.join(',')
 
-  let line = `${measurementName}${labels} ${data} ${new Date().valueOf()}`
+  let line = `${measurementName}${labelsString} ${data} ${new Date().valueOf()}`
   const { url, organization, bucket, precision, token } = state
   let command = `curl --request POST \
                  --header "Authorization: Token ${token}" \
