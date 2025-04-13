@@ -30,7 +30,7 @@ export async function logWeatherToInflux(event, state) {
     location: state.location
   }
 
-  return logToInflux('weather', measurements, labels, globals.influxdb)
+  return logToInflux('weather', measurements, labels, globals.state.influxdb)
 }
 
 async function logToInflux(measurementName, event, labels, state) {
