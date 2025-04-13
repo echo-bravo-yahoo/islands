@@ -58,6 +58,8 @@ async function logToInflux(measurementName, event, labels, state) {
                  --header "Accept: application/json" \
                  --data-binary "${line}" \
                 "${url}?org=${organization}&bucket=${bucket}&precision=${precision}"`
-  return exec(command)
+  console.log(`Running command: ${command}`)
+  const result = exec(command)
+  console.log(`Result: ${result}`)
 }
 
