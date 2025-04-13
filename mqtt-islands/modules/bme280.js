@@ -3,7 +3,7 @@ import get from "lodash/get.js";
 import { globals } from "../index.js";
 import { Temp } from "../util/temp.js";
 import { Sensor } from "./generic-sensor.js";
-import { logWeatherToInflux } from "../util/influx.js";
+import { logWeatherToInflux } from "./influxdb.js";
 
 let bme280Sensor;
 
