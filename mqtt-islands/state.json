@@ -18,5 +18,13 @@
     "remoteSensor": {
       "topic": ""
     }
+  },
+  "influxdb": {
+    "enabled": false,
+    "url": "http://echobravoyahoo.net:8086/api/v2/write",
+    "organization": "echo-bravo-yahoo",
+    "bucket": "islands",
+    "precision": "ms",
+    "token": ""
   }
 }
