@@ -3,6 +3,7 @@ import get from "lodash/get.js";
 import { globals } from "../index.js";
 import { Temp } from "../util/temp.js";
 import { Sensor } from "./generic-sensor.js";
+import { logWeatherToInflux } from "../util/influx.js";
 
 let bme280Sensor;
 
@@ -106,6 +107,8 @@ export class BME280 extends Sensor {
       `data/weather/${globals.state.location || "unknown"}`,
       JSON.stringify(payload)
     );
+
+    logWeatherToInflux(payload, { ...globals.configs[0].currentState, ...this.currentState });
 
     if (this.currentState.remoteSensor) {
       // cmnd/destination/HVACRemoteTemp degreesC
