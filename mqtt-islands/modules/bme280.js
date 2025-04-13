@@ -108,7 +108,7 @@ export class BME280 extends Sensor {
       JSON.stringify(payload)
     );
 
-    logWeatherToInflux(payload, { ...globals.state, ...this.currentState });
+    await logWeatherToInflux(payload, { ...globals.state, ...this.currentState });
 
     if (this.currentState.remoteSensor) {
       // cmnd/destination/HVACRemoteTemp degreesC
