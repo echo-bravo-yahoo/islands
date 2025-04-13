@@ -1,5 +1,7 @@
 import { exec } from 'node:child_process'
 
+import { globals } from "../index.js";
+
 /*
 {
   "metadata": {
@@ -28,7 +30,7 @@ export async function logWeatherToInflux(event, state) {
     location: state.location
   }
 
-  return logToInflux('weather', measurements, labels, state)
+  return logToInflux('weather', measurements, labels, globals.influxdb)
 }
 
 async function logToInflux(measurementName, event, labels, state) {
