@@ -49,12 +49,11 @@ export class BLETracker extends Sensor {
 
   async sampleOne(deviceSpec) {
     const deviceKey = deviceSpec.alias || deviceSpec.macAddress;
-    if (!deviceMap[deviceKey])
-      throw new Error(
-        `Connection with device ${deviceKey} not initialized at sample time!`
-      );
+    let rssi = -99;
 
-    const rssi = await device.getRSSI();
+    if (deviceMap[deviceKey]) {
+      rssi = await device.getRSSI();
+    }
 
     const datapoint = {
       metadata: {
@@ -68,15 +67,18 @@ export class BLETracker extends Sensor {
     };
 
     this.debug({}, `Sampled new data point`);
-    if (!this.samples[deviceKey].length) this.samples[deviceKey] = [];
+    if (!this.samples[deviceKey] || !this.samples[deviceKey].length) this.samples[deviceKey] = [];
     this.samples[deviceKey].push(datapoint);
   }
 
   async sample() {
     if (!this.currentState.enabled) return;
+
+    await this.discoverAdvertisements();
+
     const promises = [];
     for (let device of this.currentState.devices) {
-      promises.push(sampleOne(device));
+      promises.push(this.sampleOne(device));
     }
 
     return Promise.all(promises);
@@ -103,7 +105,7 @@ export class BLETracker extends Sensor {
     );
   }
 
-  async enable() {
+  async discoverAdvertisements() {
     const nodeBLE = (await import("node-ble")).default;
     ble = nodeBLE.createBluetooth();
     adapter = await ble.bluetooth.defaultAdapter();
@@ -111,10 +113,19 @@ export class BLETracker extends Sensor {
     if (!(await adapter.isDiscovering())) await adapter.startDiscovery();
     for (let device of this.currentState.devices) {
       const deviceKey = device.alias || device.macAddress;
-      deviceMap[deviceKey] = await adapter.waitDevice(
-        this.currentState.macAddress
-      );
+      try {
+        deviceMap[deviceKey] = await adapter.waitDevice(
+          this.currentState.macAddress,
+          1000
+        );
+      } catch (e) {
+        // it's normal for missing devices to timeout
+      }
     }
+  }
+
+  async enable() {
+    await this.discoverAdvertisements();
 
     this.setupPublisher();
     this.info(
