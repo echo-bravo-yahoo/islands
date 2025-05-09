@@ -30,8 +30,7 @@
   },
   "bleTracker": {
     "enabled": false,
-    "alias": "",
-    "macAddress": "00:00:00:00:00:00",
+    "devices": [{ "alias": "", "macAddress": "00:00:00:00:00:00" }],
     "sampling": {
       "interval": 10000,
       "aggregation": "average"

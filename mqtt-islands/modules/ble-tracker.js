@@ -3,7 +3,8 @@ import get from "lodash/get.js";
 import { globals } from "../index.js";
 import { Sensor } from "./generic-sensor.js";
 
-let ble, adapter, device;
+let ble, adapter;
+const deviceMap = {};
 
 export class BLETracker extends Sensor {
   constructor(stateKey) {
@@ -46,8 +47,13 @@ export class BLETracker extends Sensor {
     return aggregated;
   }
 
-  async sample() {
-    if (!this.currentState.enabled) return;
+  async sampleOne(deviceSpec) {
+    const deviceKey = deviceSpec.alias || deviceSpec.macAddress;
+    if (!deviceMap[deviceKey])
+      throw new Error(
+        `Connection with device ${deviceKey} not initialized at sample time!`
+      );
+
     const rssi = await device.getRSSI();
 
     const datapoint = {
@@ -62,7 +68,18 @@ export class BLETracker extends Sensor {
     };
 
     this.debug({}, `Sampled new data point`);
-    this.samples.push(datapoint);
+    if (!this.samples[deviceKey].length) this.samples[deviceKey] = [];
+    this.samples[deviceKey].push(datapoint);
+  }
+
+  async sample() {
+    if (!this.currentState.enabled) return;
+    const promises = [];
+    for (let device of this.currentState.devices) {
+      promises.push(sampleOne(device));
+    }
+
+    return Promise.all(promises);
   }
 
   async publishReading() {
@@ -92,7 +109,12 @@ export class BLETracker extends Sensor {
     adapter = await ble.bluetooth.defaultAdapter();
 
     if (!(await adapter.isDiscovering())) await adapter.startDiscovery();
-    device = await adapter.waitDevice(this.currentState.macAddress);
+    for (let device of this.currentState.devices) {
+      const deviceKey = device.alias || device.macAddress;
+      deviceMap[deviceKey] = await adapter.waitDevice(
+        this.currentState.macAddress
+      );
+    }
 
     this.setupPublisher();
     this.info(
@@ -104,7 +126,9 @@ export class BLETracker extends Sensor {
 
   async disable() {
     clearInterval(this.interval);
-    if (device) await device.disconnect();
+    for (let device of Object.values(deviceMap)) {
+      await device.disconnect();
+    }
     ble.destroy();
 
     this.info(
