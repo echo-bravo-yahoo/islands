@@ -14,9 +14,10 @@ export class Sensor extends Module {
   }
 
   // path => single datapoint
-  aggregateMeasurement(path) {
+  aggregateMeasurement(path, prefixKey = "") {
+    const samples = !!prefixKey ? this.samples[prefixKey] : this.samples;
     const result = this.doAggregation(
-      map(this.samples, (sample) => get(sample, path))
+      map(samples, (sample) => get(sample, path))
     );
 
     return result;

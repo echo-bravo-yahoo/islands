@@ -11,6 +11,7 @@ export class BLETracker extends Sensor {
     super(stateKey);
 
     this.stateKey = stateKey;
+    this.samples = {};
   }
 
   async register() {
@@ -23,26 +24,32 @@ export class BLETracker extends Sensor {
     }
   }
 
-  aggregate() {
+  aggregateOne(deviceKey) {
     const aggregation =
-      this.samples.length === 1
+      this.samples[deviceKey].length === 1
         ? "latest"
         : get(this.currentState, "sampling.aggregation", "average");
 
-    this.info({ blob: this.samples }, `Aggregating.`);
+    this.info({ blob: this.samples[deviceKey] }, `Aggregating.`);
     const aggregated = {
       metadata: {
         island: globals.name,
         timestamp: new Date(),
       },
       aggregationMetadata: {
-        samples: this.samples.length,
+        samples: this.samples[deviceKey].length,
         aggregation,
       },
-      rssi: Number(this.aggregateMeasurement("rssi.result")).toFixed(0),
+      rssi: Number(this.aggregateMeasurement(`rssi.result`, deviceKey)).toFixed(
+        0
+      ),
     };
+    this.info(
+      { before: this.samples[deviceKey], after: aggregated },
+      `Aggregated.`
+    );
 
-    this.samples = [];
+    this.samples[deviceKey] = [];
 
     return aggregated;
   }
@@ -52,7 +59,11 @@ export class BLETracker extends Sensor {
     let rssi = -99;
 
     if (deviceMap[deviceKey]) {
-      rssi = await device.getRSSI();
+      try {
+        rssi = await deviceMap[deviceKey].getRSSI();
+      } catch (e) {
+        rssi = -98;
+      }
     }
 
     const datapoint = {
@@ -67,7 +78,8 @@ export class BLETracker extends Sensor {
     };
 
     this.debug({}, `Sampled new data point`);
-    if (!this.samples[deviceKey] || !this.samples[deviceKey].length) this.samples[deviceKey] = [];
+    if (!this.samples[deviceKey] || !this.samples[deviceKey].length)
+      this.samples[deviceKey] = [];
     this.samples[deviceKey].push(datapoint);
   }
 
@@ -84,41 +96,55 @@ export class BLETracker extends Sensor {
     return Promise.all(promises);
   }
 
-  async publishReading() {
-    if (
-      get(this.currentState, "sampling") === undefined ||
-      this.samples.length === 0
-    ) {
-      await this.sample();
-    }
-
-    const payload = this.aggregate();
+  async publishOne(deviceKey) {
+    const payload = this.aggregateOne(deviceKey);
 
     globals.connection.publish(
-      `${this.currentState.mqttTopicPrefix || "data/ble"}/${globals.state.location || "unknown"}/${this.currentState.alias || this.currentState.macAddress}`,
+      `${this.currentState.mqttTopicPrefix || "data/ble"}/${globals.state.location || "unknown"}/${deviceKey}`,
       JSON.stringify(payload)
     );
 
     this.info(
       { role: "blob", blob: payload },
-      `Publishing new BLE tracker data to ${this.currentState.mqttTopicPrefix || "data/ble"}/${globals.state.location || "unknown"}/${this.currentState.alias || this.currentState.macAddress}: ${JSON.stringify(payload)}`
+      `Publishing new BLE tracker data to ${this.currentState.mqttTopicPrefix || "data/ble"}/${globals.state.location || "unknown"}/${deviceKey}: ${JSON.stringify(payload)}`
     );
   }
 
+  async publishReading() {
+    const firstDeviceSamples = Object.values(this.samples)[0];
+    if (
+      get(this.currentState, "sampling") === undefined ||
+      !firstDeviceSamples ||
+      firstDeviceSamples.length === 0
+    ) {
+      await this.sample();
+    }
+
+    for (let deviceSpec of this.currentState.devices) {
+      const deviceKey = deviceSpec.alias || deviceSpec.macAddress;
+      this.publishOne(deviceKey);
+    }
+  }
+
   async discoverAdvertisements() {
-    const nodeBLE = (await import("node-ble")).default;
-    ble = nodeBLE.createBluetooth();
-    adapter = await ble.bluetooth.defaultAdapter();
+    if (!adapter) {
+      const nodeBLE = (await import("node-ble")).default;
+      ble = nodeBLE.createBluetooth();
+      adapter = await ble.bluetooth.defaultAdapter();
+    }
 
     if (!(await adapter.isDiscovering())) await adapter.startDiscovery();
+
     for (let device of this.currentState.devices) {
       const deviceKey = device.alias || device.macAddress;
       try {
         deviceMap[deviceKey] = await adapter.waitDevice(
-          this.currentState.macAddress,
-          1000
+          device.macAddress,
+          30000
         );
+        this.debug({}, `Device with key ${deviceKey} found.`);
       } catch (e) {
+        this.debug({}, `No device found for key ${deviceKey}`);
         // it's normal for missing devices to timeout
       }
     }
@@ -128,10 +154,7 @@ export class BLETracker extends Sensor {
     await this.discoverAdvertisements();
 
     this.setupPublisher();
-    this.info(
-      {},
-      `Enabled BLE tracker for device with MAC address ${this.currentState.macAddress}.`
-    );
+    this.info({}, `Enabled BLE tracker.`);
     this.currentState.enabled = true;
   }
 
@@ -142,10 +165,7 @@ export class BLETracker extends Sensor {
     }
     ble.destroy();
 
-    this.info(
-      {},
-      `Disabled BLE tracker for device with MAC address ${this.currentState.macAddress}.`
-    );
+    this.info({}, `Disabled BLE tracker.`);
     this.currentState.enabled = false;
   }
 }
