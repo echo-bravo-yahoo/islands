@@ -104,11 +104,14 @@ export class BME280 extends Sensor {
     const payload = this.aggregate();
 
     globals.connection.publish(
-      `data/weather/${globals.state.location || "unknown"}`,
+      `${this.currentState.mqttTopicPrefix || "data/weather"}/${globals.state.location || "unknown"}`,
       JSON.stringify(payload)
     );
 
-    await logWeatherToInflux(payload, { ...globals.state, ...this.currentState });
+    await logWeatherToInflux(payload, {
+      ...globals.state,
+      ...this.currentState,
+    });
 
     if (this.currentState.remoteSensor) {
       // cmnd/destination/HVACRemoteTemp degreesC
@@ -131,7 +134,7 @@ export class BME280 extends Sensor {
 
     this.info(
       { role: "blob", blob: payload },
-      `Publishing new bme280 data to data/weather/${globals.state.location || "unknown"}: ${JSON.stringify(payload)}`
+      `Publishing new bme280 data to ${this.currentState.mqttTopicPrefix || "data/weather"}/${globals.state.location || "unknown"}: ${JSON.stringify(payload)}`
     );
   }
 

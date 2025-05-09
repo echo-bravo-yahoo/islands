@@ -76,13 +76,13 @@ export class BLETracker extends Sensor {
     const payload = this.aggregate();
 
     globals.connection.publish(
-      `monitor/${globals.state.location || "unknown"}/${this.currentState.alias || this.currentState.macAddress}`,
+      `${this.currentState.mqttTopicPrefix || "data/ble"}/${globals.state.location || "unknown"}/${this.currentState.alias || this.currentState.macAddress}`,
       JSON.stringify(payload)
     );
 
     this.info(
       { role: "blob", blob: payload },
-      `Publishing new BLE tracker data to monitor/${globals.state.location || "unknown"}/${this.currentState.alias || this.currentState.macAddress}: ${JSON.stringify(payload)}`
+      `Publishing new BLE tracker data to ${this.currentState.mqttTopicPrefix || "data/ble"}/${globals.state.location || "unknown"}/${this.currentState.alias || this.currentState.macAddress}: ${JSON.stringify(payload)}`
     );
   }
 

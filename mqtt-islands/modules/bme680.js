@@ -114,7 +114,7 @@ export class BME680 {
     const payload = this.aggregate();
 
     globals.connection.publish(
-      `data/weather/${globals.configs[0].currentState.location || "unknown"}`,
+      `${this.currentState.mqttTopicPrefix || "data/weather"}/${globals.configs[0].currentState.location || "unknown"}`,
       JSON.stringify(payload)
     );
 
@@ -141,7 +141,7 @@ export class BME680 {
 
     this.info(
       { role: "blob", blob: payload },
-      `Publishing new bme680 data to data/weather/${globals.state.location || "unknown"}: ${JSON.stringify(payload)}`
+      `Publishing new bme680 data to ${this.currentState.mqttTopicPrefix || "data/weather"}/${globals.state.location || "unknown"}: ${JSON.stringify(payload)}`
     );
   }
 
