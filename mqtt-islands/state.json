@@ -18,5 +18,22 @@
     "remoteSensor": {
       "topic": ""
     }
+  },
+  "influxdb": {
+    "enabled": false,
+    "url": "",
+    "organization": "",
+    "bucket": "",
+    "precision": "ms",
+    "token": ""
+  },
+  "bleTracker": {
+    "enabled": false,
+    "alias": "",
+    "macAddress": "00:00:00:00:00:00",
+    "sampling": {
+      "interval": 10000,
+      "aggregation": "average"
+    }
   }
 }

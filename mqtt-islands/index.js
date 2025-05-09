@@ -8,11 +8,12 @@ const packageJson = require("./package.json");
 
 import bme280 from "./modules/bme280.js";
 import bme680 from "./modules/bme680.js";
+import bleTracker from "./modules/ble-tracker.js";
 
 import loggerFactory from "pino";
 
 export const globals = {
-  modules: [bme280, bme680],
+  modules: [bme280, bme680, bleTracker],
   configs: [],
   name: config.name,
   version: packageJson.version,
