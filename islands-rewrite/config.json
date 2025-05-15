@@ -1,9 +1,0 @@
-{
-   "name": "vaxholm",
-   "certId": "f7fb0185defbbac073ac35af777bca19ae61d686f9ec4a704497024eebc51507",
-   "certFilePath": "/home/pi/islands/vaxholm-certificate.pem.crt",
-   "publicKeyFilePath": "/home/pi/islands/vaxholm-public.pem.key",
-   "privateKeyFilePath": "/home/pi/islands/vaxholm-private.pem.key",
-   "awsCertFilePath": "/home/pi/islands/AmazonRootCA1.pem",
-   "endpoint": "ayecs2a13r9pv-ats.iot.us-west-2.amazonaws.com"
-}

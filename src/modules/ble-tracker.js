@@ -61,9 +61,7 @@ export class BLETracker extends Sensor {
     if (deviceMap[deviceKey]) {
       try {
         rssi = await deviceMap[deviceKey].getRSSI();
-      } catch (e) {
-        rssi = -98;
-      }
+      } catch (e) {}
     }
 
     const datapoint = {
